@@ -33,3 +33,4 @@ storybook-static/
 # Secrets — never commit
 .env
 generated/
+maydon_kv*
