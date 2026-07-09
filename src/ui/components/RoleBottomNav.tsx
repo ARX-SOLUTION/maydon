@@ -1,5 +1,6 @@
 /** @jsxImportSource hono/jsx */
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import { Icon } from "./LucideIcons.tsx";
 
 type Role = "admin" | "user";
@@ -36,6 +37,8 @@ const adminNav: NavItem[] = [
     icon: "settings",
     href: "/app/admin/settings",
   },
+  // owner-only — hidden by default, revealed by the reveal script below
+  { id: "admins", label: "Adminlar", icon: "users", href: "/app/admin/admins" },
 ];
 
 const userNav: NavItem[] = [
@@ -47,6 +50,7 @@ const userNav: NavItem[] = [
     icon: "list",
     href: "/app/user/requests",
   },
+  { id: "profile", label: "Profil", icon: "profile", href: "/app/user/profile" },
 ];
 
 export const RoleBottomNav: FC<{ role: Role; activeId: string }> = (
@@ -55,6 +59,7 @@ export const RoleBottomNav: FC<{ role: Role; activeId: string }> = (
   const items = role === "admin" ? adminNav : userNav;
 
   return (
+    <>
     <nav
       class="fixed bottom-0 left-0 right-0 mx-auto max-w-[480px] bg-crm-surface/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)] z-50 rounded-t-[28px] shadow-[0_-8px_28px_rgba(15,23,42,0.10)]"
       aria-label={role === "admin"
@@ -67,13 +72,16 @@ export const RoleBottomNav: FC<{ role: Role; activeId: string }> = (
           return (
             <a
               href={item.href}
+              id={item.id === "admins" ? "navAdmins" : undefined}
               hx-get={item.href}
               hx-target="#app-content"
               hx-swap="innerHTML"
               hx-push-url="true"
               aria-current={isActive ? "page" : undefined}
               aria-label={item.label}
-              class={`flex flex-col items-center justify-center min-w-[44px] flex-1 min-h-[60px] rounded-[18px] tap-scale focus-ring ${
+              class={`${
+                item.id === "admins" ? "hidden" : "flex"
+              } flex-col items-center justify-center min-w-[44px] flex-1 min-h-[60px] rounded-[18px] tap-scale focus-ring ${
                 isActive
                   ? "text-crm-primary bg-crm-primarySoft/45"
                   : "text-crm-textMuted hover:text-crm-textMain hover:bg-crm-surfaceSoft"
@@ -97,5 +105,27 @@ export const RoleBottomNav: FC<{ role: Role; activeId: string }> = (
         })}
       </div>
     </nav>
+    {role === "admin" && (
+      <script>
+        {raw(`
+        (async function revealAdminsNav() {
+          var el = document.getElementById('navAdmins');
+          if (!el) return;
+          try {
+            var initData = window.Telegram?.WebApp?.initData || '';
+            var res = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + initData } });
+            var data = await res.json();
+            if (res.ok && data.isOwner) {
+              el.classList.remove('hidden');
+              el.classList.add('flex');
+            }
+          } catch (e) {
+            // silent — discoverability link, not a security boundary
+          }
+        })();
+      `)}
+      </script>
+    )}
+    </>
   );
 };

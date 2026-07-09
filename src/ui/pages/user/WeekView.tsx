@@ -34,19 +34,38 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
     dayData = { slots: [], openTime: "08:00", closeTime: "23:00" };
   }
 
-  // Group slots by hour
-  const groupedSlots: { hour: string; slots: any[] }[] = [];
-  let currentGroup: { hour: string; slots: any[] } | null = null;
+  // Merge consecutive busy slots (same booking) into one segment; free slots stay 1:1.
+  type Segment =
+    | { kind: "free"; start: string }
+    | {
+      kind: "busy";
+      start: string;
+      end: string;
+      bookingId?: string;
+      bookedBy?: string;
+    };
+  const segments: Segment[] = [];
   for (const slot of dayData.slots) {
-    const hour = slot.start.split(":")[0] + ":00";
-    if (!currentGroup || currentGroup.hour !== hour) {
-      if (currentGroup) groupedSlots.push(currentGroup);
-      currentGroup = { hour, slots: [slot] };
+    if (!slot.isBusy) {
+      segments.push({ kind: "free", start: slot.start });
+      continue;
+    }
+    const last = segments[segments.length - 1];
+    if (
+      last && last.kind === "busy" && slot.bookingId &&
+      last.bookingId === slot.bookingId
+    ) {
+      last.end = slot.end;
     } else {
-      currentGroup.slots.push(slot);
+      segments.push({
+        kind: "busy",
+        start: slot.start,
+        end: slot.end,
+        bookingId: slot.bookingId,
+        bookedBy: slot.bookedBy,
+      });
     }
   }
-  if (currentGroup) groupedSlots.push(currentGroup);
 
   return (
     <AppShell>
@@ -190,59 +209,46 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
               Band
             </span>
           </div>
-          <div class="flex flex-col">
-            {groupedSlots.length === 0
+          <div class="flex flex-col divide-y divide-crm-borderSoft">
+            {segments.length === 0
               ? (
                 <div class="p-8 text-center text-crm-textMuted text-sm font-medium">
                   Bu sana uchun ma'lumot yo'q
                 </div>
               )
               : null}
-            {groupedSlots.map((group) => (
-              <div class="flex border-b border-crm-borderSoft last:border-b-0 h-[80px]">
-                <div class="w-[60px] shrink-0 border-r border-crm-borderSoft flex flex-col justify-between py-1 items-center bg-crm-surfaceSoft/30">
-                  <span class="text-[12px] font-semibold text-crm-textMuted -mt-3 bg-crm-surface px-1">
-                    {group.hour}
-                  </span>
-                </div>
-                <div class="flex-1 flex flex-col">
-                  {group.slots.map((slot: any) => (
-                    <button
-                      {...(!slot.isBusy
-                        ? {
-                          "hx-get":
-                            `/app/user/day?date=${targetDate}&start=${slot.start}`,
-                        }
-                        : {})}
-                      hx-target="#app-content"
-                      aria-label={slot.isBusy
-                        ? `${slot.start} band`
-                        : `${slot.start} uchun bron qilish`}
-                      class={`flex-1 min-h-[40px] border-b border-crm-borderSoft border-dashed last:border-b-0 transition-[background-color,opacity] duration-150 ease-out flex items-center px-3 focus-ring ${
-                        slot.isBusy
-                          ? "bg-gray-100 cursor-not-allowed opacity-60"
-                          : "bg-crm-successSoft/45 hover:bg-crm-successSoft active:bg-crm-successSoft"
-                      }`}
-                      disabled={slot.isBusy}
-                    >
-                      {slot.isBusy
-                        ? (
-                          <span class="text-[12px] font-bold text-crm-textMuted flex items-center">
-                            <Icon name="xCircle" class="w-3.5 h-3.5 mr-1.5" />
-                            {" "}
-                            Band
-                          </span>
-                        )
-                        : (
-                          <span class="text-[12px] font-semibold text-crm-success transition-opacity">
-                            + {slot.start} Bron qilish
-                          </span>
-                        )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+            {segments.map((seg) =>
+              seg.kind === "free"
+                ? (
+                  <button
+                    hx-get={`/app/user/day?date=${targetDate}&start=${seg.start}`}
+                    hx-target="#app-content"
+                    aria-label={`${seg.start} uchun bron qilish`}
+                    class="min-h-[52px] flex items-center gap-3 px-4 bg-crm-successSoft/45 hover:bg-crm-successSoft active:bg-crm-successSoft transition-colors duration-150 ease-out focus-ring text-left"
+                  >
+                    <span class="text-[13px] font-bold text-crm-textMain tabular-nums w-[52px] shrink-0">
+                      {seg.start}
+                    </span>
+                    <span class="text-[12px] font-semibold text-crm-success flex items-center gap-1">
+                      <Icon name="plus" class="w-3.5 h-3.5" />
+                      Bron qilish
+                    </span>
+                  </button>
+                )
+                : (
+                  <div class="min-h-[64px] flex items-center gap-3 px-4 bg-gray-100">
+                    <span class="text-[13px] font-bold text-crm-textMuted tabular-nums w-[92px] shrink-0">
+                      {seg.start} – {seg.end}
+                    </span>
+                    <span class="flex items-center gap-1.5 text-[12px] font-semibold text-crm-textMuted min-w-0">
+                      <Icon name="profile" class="w-4 h-4 shrink-0" />
+                      <span class="truncate">
+                        {seg.bookedBy ? `Band · ${seg.bookedBy}` : "Band"}
+                      </span>
+                    </span>
+                  </div>
+                )
+            )}
           </div>
         </Card>
         <div class="h-4"></div>

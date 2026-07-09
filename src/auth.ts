@@ -3,11 +3,14 @@
  */
 
 import { getAdmin } from "./kv.ts";
+import type { AdminRole } from "./models.ts";
 
 export interface AuthState {
   userId: number;
   userName?: string;
   isAdmin: boolean;
+  role?: AdminRole;
+  isOwner: boolean;
 }
 
 async function verifyInitData(initData: string): Promise<{
@@ -107,6 +110,8 @@ export function authMiddleware() {
       userId: result.userId,
       userName: result.userName,
       isAdmin: !!admin,
+      role: admin?.role,
+      isOwner: admin?.role === "owner",
     });
 
     await next();
@@ -117,6 +122,16 @@ export function requireAdmin() {
   return async (c: any, next: () => Promise<void>) => {
     const auth = c.get("auth") as AuthState | undefined;
     if (!auth?.isAdmin) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+    await next();
+  };
+}
+
+export function requireOwner() {
+  return async (c: any, next: () => Promise<void>) => {
+    const auth = c.get("auth") as AuthState | undefined;
+    if (!auth?.isOwner) {
       return c.json({ error: "Forbidden" }, 403);
     }
     await next();

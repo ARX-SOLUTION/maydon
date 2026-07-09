@@ -3,15 +3,20 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware, requireAdmin } from "../auth.ts";
+import { authMiddleware, requireAdmin, requireOwner } from "../auth.ts";
 import {
+  getAdmin,
   getAllRecurring,
   getPendingRequests,
   getSettings,
   getUser,
+  keys,
+  kv,
   upsertSettings,
   upsertUser,
 } from "../kv.ts";
+import type { Admin } from "../models.ts";
+import { bot } from "../bot/client.ts";
 import {
   cancelBooking,
   confirmBooking,
@@ -209,6 +214,75 @@ api.post("/admin/users/:id/block", async (c: any) => {
   }
 
   await upsertUser(user);
+  return c.json({ success: true });
+});
+
+// ========== Admin management (owner-only) ==========
+
+// GET /api/admin/admins — list admins (owner first)
+api.get("/admin/admins", requireOwner(), async (c: any) => {
+  const auth = c.get("auth");
+  const admins: Admin[] = [];
+  for await (const entry of kv.list<Admin>({ prefix: ["admins"] })) {
+    admins.push(entry.value);
+  }
+  admins.sort((a, b) =>
+    (a.role === "owner" ? 0 : 1) - (b.role === "owner" ? 0 : 1) ||
+    a.addedAt.localeCompare(b.addedAt)
+  );
+  return c.json({ admins, me: auth.userId });
+});
+
+// POST /api/admin/admins/invite — one-time invite link
+api.post("/admin/admins/invite", requireOwner(), async (c: any) => {
+  const auth = c.get("auth");
+  const token = crypto.randomUUID();
+  await kv.set(keys.inviteToken(token), {
+    createdBy: auth.userId,
+    createdAt: new Date().toISOString(),
+  });
+
+  let botUsername = "";
+  try {
+    botUsername = (await bot.api.getMe()).username;
+  } catch (e) {
+    console.error("Failed to fetch bot username:", e);
+  }
+
+  return c.json({
+    link: `https://t.me/${botUsername}?start=admin_${token}`,
+    token,
+  });
+});
+
+// DELETE /api/admin/admins/:id — remove a helper admin
+api.delete("/admin/admins/:id", requireOwner(), async (c: any) => {
+  const auth = c.get("auth");
+  const id = parseInt(c.req.param("id"));
+
+  const target = await getAdmin(id);
+  if (!target) {
+    return c.json({ error: "Admin topilmadi" }, 404);
+  }
+  if (target.role === "owner") {
+    return c.json({ error: "Egani o'chirib bo'lmaydi" }, 400);
+  }
+  if (id === auth.userId) {
+    return c.json({ error: "O'zingizni o'chirib bo'lmaydi" }, 400);
+  }
+
+  await kv.delete(keys.admin(id));
+
+  // Best-effort DM the removed admin — never fail the request on this.
+  try {
+    await bot.api.sendMessage(
+      id,
+      "⚠️ Sizning adminlik huquqingiz bekor qilindi.",
+    );
+  } catch (e) {
+    console.error("Failed to DM removed admin:", e);
+  }
+
   return c.json({ success: true });
 });
 

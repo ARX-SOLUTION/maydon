@@ -118,6 +118,19 @@ updateEnds();
     if (res.ok && !data.isActive) {
       formEl.style.display = 'none';
       noticeEl.classList.remove('hidden');
+      return;
+    }
+    // Returning user: prefill contact from profile (only if empty — never clobber typed input)
+    if (res.ok) {
+      var nameEl = document.getElementById('bookName');
+      var phoneEl = document.getElementById('bookPhone');
+      var filled = false;
+      if (nameEl && !nameEl.value && data.name) { nameEl.value = data.name; filled = true; }
+      if (phoneEl && !phoneEl.value && data.phone) { phoneEl.value = data.phone; filled = true; }
+      if (filled) {
+        var hint = document.getElementById('prefillHint');
+        if (hint) hint.classList.remove('hidden');
+      }
     }
   } catch (e) {
     // network hiccup — leave the form as-is, the server-side check is the real gate
@@ -287,6 +300,12 @@ export const UserDayView: FC<{ date?: string; start?: string }> = async (
                 />
               </div>
             </div>
+            <p
+              id="prefillHint"
+              class="hidden text-[12px] text-crm-textMuted px-1 mt-2"
+            >
+              Ma'lumotlar profilingizdan olindi
+            </p>
           </Card>
 
           {/* Submit */}

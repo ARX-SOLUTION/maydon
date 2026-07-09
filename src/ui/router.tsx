@@ -8,6 +8,8 @@ import { AdminRequests } from "./pages/admin/Requests.tsx";
 import { AdminSchedule } from "./pages/admin/Schedule.tsx";
 import { AdminRecurring } from "./pages/admin/Recurring.tsx";
 import { AdminSettings } from "./pages/admin/Settings.tsx";
+import { UserProfile } from "./pages/user/Profile.tsx";
+import { AdminAdmins } from "./pages/admin/Admins.tsx";
 import { Layout } from "./layout.tsx";
 import { authMiddleware } from "../auth.ts";
 
@@ -43,6 +45,10 @@ uiRouter.get("/user/requests", authMiddleware(), (c: any) => {
   const auth = c.get("auth");
   return c.html(<UserRequests userId={auth.userId} />);
 });
+uiRouter.get("/user/profile", authMiddleware(), (c: any) => {
+  const auth = c.get("auth");
+  return c.html(<UserProfile userId={auth.userId} />);
+});
 
 // Admin routes
 uiRouter.get("/admin/requests", (c) => c.html(<AdminRequests />));
@@ -52,6 +58,7 @@ uiRouter.get(
 );
 uiRouter.get("/admin/recurring", (c) => c.html(<AdminRecurring />));
 uiRouter.get("/admin/settings", (c) => c.html(<AdminSettings />));
+uiRouter.get("/admin/admins", (c) => c.html(<AdminAdmins />));
 
 // Default redirect
 uiRouter.get("/", (c) => c.redirect("/app/user/week"));

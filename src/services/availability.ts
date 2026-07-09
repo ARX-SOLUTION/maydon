@@ -4,21 +4,25 @@
 
 import { minutesToTime, overlaps, timeToMinutes } from "./booking.ts";
 import { getBookingsByDay, getSettings } from "../kv.ts";
-import type { Booking } from "../models.ts";
+import type { Booking, Settings } from "../models.ts";
 
 export interface TimeSlot {
   start: string;
   end: string;
   isBusy: boolean;
   bookingId?: string;
+  bookedBy?: string;
 }
 
-export async function getDayAvailability(date: string): Promise<{
+export async function getDayAvailability(
+  date: string,
+  preloadedSettings?: Settings,
+): Promise<{
   slots: TimeSlot[];
   openTime: string;
   closeTime: string;
 }> {
-  const settings = await getSettings();
+  const settings = preloadedSettings ?? (await getSettings());
   if (!settings) {
     throw new Error("Settings not initialized");
   }
@@ -48,6 +52,7 @@ export async function getDayAvailability(date: string): Promise<{
       end: endTime,
       isBusy: !!overlappingBooking,
       bookingId: overlappingBooking?.id,
+      bookedBy: overlappingBooking?.clientName ?? undefined,
     });
   }
 
@@ -64,12 +69,18 @@ export async function getAvailabilityRange(
 ): Promise<Record<string, TimeSlot[]>> {
   const result: Record<string, TimeSlot[]> = {};
 
+  // Read settings once, reuse across the range (was re-read per day).
+  const settings = await getSettings();
+  if (!settings) {
+    throw new Error("Settings not initialized");
+  }
+
   const start = new Date(fromDate);
   const end = new Date(toDate);
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const dateStr = d.toISOString().split("T")[0];
-    const day = await getDayAvailability(dateStr);
+    const day = await getDayAvailability(dateStr, settings);
     result[dateStr] = day.slots;
   }
 

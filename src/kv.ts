@@ -102,47 +102,59 @@ export async function getBooking(id: string): Promise<Booking | null> {
   return res.value;
 }
 
+// ponytail: Deno KV getMany caps at 10 keys/call — chunk larger id lists.
+const GETMANY_MAX = 10;
+
+// Batch-fetch bookings by id, skipping missing. Replaces per-id N+1 kv.get loops.
+async function getBookingsByIds(ids: string[]): Promise<Booking[]> {
+  const bookings: Booking[] = [];
+  for (let i = 0; i < ids.length; i += GETMANY_MAX) {
+    const chunk = ids.slice(i, i + GETMANY_MAX).map((id) => keys.booking(id));
+    const entries = await kv.getMany<Booking[]>(chunk);
+    for (const entry of entries) {
+      if (entry.value) bookings.push(entry.value);
+    }
+  }
+  return bookings;
+}
+
 export async function getBookingsByDay(date: string): Promise<Booking[]> {
   // Note: prefix must NOT include a trailing "" placeholder for the id —
   // Deno KV prefix matching requires exact equality on every given
   // component, so a "" component matches nothing (not "starts with").
-  const entries = await kv.list<Booking>({
+  const entries = kv.list<Booking>({
     prefix: ["bookings_by_day", date],
   });
-  const bookings: Booking[] = [];
+  const ids: string[] = [];
   for await (const entry of entries) {
-    const booking = await getBooking(entry.key[2] as string);
-    if (booking) bookings.push(booking);
+    ids.push(entry.key[2] as string);
   }
-  return bookings;
+  return getBookingsByIds(ids);
 }
 
 export async function getBookingsByUser(
   telegramId: number,
 ): Promise<Booking[]> {
-  const entries = await kv.list<string>({
+  const entries = kv.list<string>({
     prefix: ["bookings_by_user", telegramId],
   });
-  const bookings: Booking[] = [];
+  const ids: string[] = [];
   for await (const entry of entries) {
-    const booking = await getBooking(entry.value);
-    if (booking) bookings.push(booking);
+    ids.push(entry.value);
   }
-  return bookings;
+  return getBookingsByIds(ids);
 }
 
 export async function getPendingRequests(): Promise<Booking[]> {
-  const entries = await kv.list<string>({
+  const entries = kv.list<string>({
     prefix: ["pending_by_created"],
   });
-  const bookings: Booking[] = [];
+  const ids: string[] = [];
   for await (const entry of entries) {
-    const booking = await getBooking(entry.value);
-    if (booking && booking.status === "pending") {
-      bookings.push(booking);
-    }
+    ids.push(entry.value);
   }
-  return bookings;
+  const bookings = await getBookingsByIds(ids);
+  return bookings.filter((b) => b.status === "pending");
 }
 
 export async function getRecurring(id: string): Promise<Recurring | null> {
