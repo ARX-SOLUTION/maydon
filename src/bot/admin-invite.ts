@@ -1,59 +1,74 @@
 /**
- * Admin designation — how someone becomes a helper admin.
- * Currently /addadmin <id>; ticket #11 replaces this with a one-time deep-link invite.
+ * Admin designation via one-time deep-link invite (ticket #11).
+ * Owner runs /invite → gets a t.me/...?start=admin_<token> link. Whoever opens it
+ * becomes a helper admin; the token is single-use.
  */
-import { addAdmin, getAdmin, getUser, isOwner } from "../kv.ts";
+import { addAdmin, getAdmin, isOwner, keys, kv } from "../kv.ts";
 import { bot } from "./client.ts";
 
+interface InviteToken {
+  createdBy: number;
+  createdAt: string; // ISO
+}
+
 export function registerAdminInvite(): void {
-  // /addadmin <telegram_id> — owner promotes someone to a helper admin
-  bot.command("addadmin", async (ctx: any) => {
+  // /invite — owner generates a one-time invite link
+  bot.command("invite", async (ctx: any) => {
     const userId = ctx.from?.id;
     if (!userId) return;
 
     if (!(await isOwner(userId))) {
-      await ctx.reply("Faqat asosiy admin (owner) admin qo'sha oladi.");
+      await ctx.reply("Faqat owner taklif qila oladi.");
       return;
     }
 
-    const arg = (ctx.match ?? "").trim();
-    const targetId = Number(arg);
-    if (!arg || !Number.isInteger(targetId) || targetId <= 0) {
-      await ctx.reply(
-        "Foydalanish: /addadmin <telegram_id>\n\nMasalan: /addadmin 123456789",
-      );
+    const token = crypto.randomUUID();
+    const record: InviteToken = {
+      createdBy: userId,
+      createdAt: new Date().toISOString(),
+    };
+    await kv.set(keys.inviteToken(token), record);
+
+    const link = `https://t.me/${ctx.me.username}?start=admin_${token}`;
+    await ctx.reply(
+      `🔗 Yordamchi admin taklif havolasi (bir martalik):\n\n${link}\n\n` +
+        "Havolani yubormoqchi bo'lgan odamingizga bering. U ochgach admin bo'ladi.",
+    );
+  });
+
+  // /start admin_<token> — consume an invite and promote the caller. Onboarding's
+  // /start handler delegates payloads to us via next(), and we're registered after it.
+  bot.command("start", async (ctx: any, next: () => Promise<void>) => {
+    const payload = (ctx.match ?? "").trim();
+    if (!payload.startsWith("admin_")) return await next();
+
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const token = payload.slice("admin_".length);
+    const res = await kv.get<InviteToken>(keys.inviteToken(token));
+    if (!res.value) {
+      await ctx.reply("Bu taklif havolasi yaroqsiz yoki ishlatilgan.");
       return;
     }
 
-    const targetUser = await getUser(targetId);
-    if (!targetUser) {
-      await ctx.reply(
-        "Bu foydalanuvchi hali botdan foydalanmagan. Avval u botga /start bosishi kerak.",
-      );
-      return;
-    }
+    // Consume the token first — one-time regardless of outcome.
+    await kv.delete(keys.inviteToken(token));
 
-    if (await getAdmin(targetId)) {
-      await ctx.reply(`${targetUser.name} allaqachon admin.`);
+    if (await getAdmin(userId)) {
+      await ctx.reply("Siz allaqachon adminsiz.");
       return;
     }
 
     await addAdmin({
-      telegramId: targetId,
-      name: targetUser.name,
+      telegramId: userId,
+      name: ctx.from?.first_name ?? "Unknown",
       role: "admin",
       addedAt: new Date().toISOString(),
     });
 
-    await ctx.reply(`✅ ${targetUser.name} endi admin!`);
-
-    try {
-      await bot.api.sendMessage(
-        targetId,
-        "✅ Siz admin etib tayinlandingiz! Mini App orqali boshqaruv panelidan foydalanishingiz mumkin.",
-      );
-    } catch (e) {
-      console.error("Failed to notify new admin:", e);
-    }
+    await ctx.reply(
+      "✅ Tabriklaymiz! Siz yordamchi admin bo'ldingiz. Mini App orqali boshqaruv panelidan foydalanishingiz mumkin.",
+    );
   });
 }

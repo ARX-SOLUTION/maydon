@@ -3,8 +3,13 @@
  * that surround a booking request. Ticket #9 adds message-editing on decision;
  * ticket #14 adds alternative slots on reject.
  */
-import { getAdmin, getPendingRequests, getUser, kv } from "../kv.ts";
-import type { Booking } from "../models.ts";
+import {
+  getAdmin,
+  getBooking,
+  getPendingRequests,
+  getUser,
+  kv,
+} from "../kv.ts";
 import {
   cancelBooking,
   confirmBooking,
@@ -28,6 +33,80 @@ async function ensureAdmin(ctx: any): Promise<boolean> {
   return isAdmin;
 }
 
+// ── #9 decision-message lifecycle helpers ─────────────────────────────────────
+// Small pure-ish builders for the edited inline message shown after a decision.
+
+const ALREADY_DECIDED = "Bu so'rov allaqachon hal qilingan";
+
+function statusHeader(status: Booking["status"]): string {
+  switch (status) {
+    case "confirmed":
+      return "✅ Tasdiqlandi";
+    case "rejected":
+      return "❌ Rad etildi";
+    case "cancelled":
+      return "⚠️ Bekor qilindi";
+    case "expired":
+      return "⏰ Muddati o'tdi";
+    case "completed":
+      return "✅ Yakunlandi";
+    default:
+      return "ℹ️ Hal qilindi";
+  }
+}
+
+// HH:MM in Asia/Tashkent. Falls back to now when the booking has no decidedAt.
+function tashkentTime(iso?: string): string {
+  const d = iso ? new Date(iso) : new Date();
+  return d.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Tashkent",
+  });
+}
+
+async function clientLabel(booking: Booking): Promise<string> {
+  if (booking.clientName) return booking.clientName;
+  if (booking.userId != null) {
+    const u = await getUser(booking.userId);
+    if (u) return u.name;
+  }
+  return "Mijoz";
+}
+
+// Outcome header + client + slot + (actor •) time. actor omitted when we didn't
+// win the decision (race loser only knows the recorded decidedAt, not who acted).
+async function formatDecision(
+  header: string,
+  booking: Booking,
+  actor?: string,
+): Promise<string> {
+  const name = await clientLabel(booking);
+  const when = tashkentTime(booking.decidedAt);
+  const footer = actor ? `👮 ${actor} • ${when}` : `👮 ${when}`;
+  return (
+    `${header}\n\n` +
+    `👤 ${name}\n` +
+    `📅 ${booking.date}\n` +
+    `⏰ ${booking.start} - ${booking.end}\n\n` +
+    footer
+  );
+}
+
+// Best-effort: rewrite the clicked message to its final outcome, drop buttons.
+// Omitting reply_markup on editMessageText removes the inline keyboard.
+async function editDecided(
+  ctx: any,
+  booking: Booking,
+  header: string,
+  actor?: string,
+): Promise<void> {
+  await ctx
+    .editMessageText(await formatDecision(header, booking, actor))
+    .catch(() => {}); // stale/old/"not modified" messages: nothing to do
+}
+
 export function registerDecisions(): void {
   // Filtered callback handlers (not a catch-all) so other modules can register
   // their own callback actions without being swallowed by a default branch.
@@ -35,20 +114,52 @@ export function registerDecisions(): void {
     if (!(await ensureAdmin(ctx))) return;
     const bookingId = ctx.match[1];
     const result = await confirmBooking(bookingId);
+    const booking = await getBooking(bookingId);
+
     if (result.success) {
       await ctx.answerCallbackQuery({ text: "✅ Tasdiqlandi" });
-      // TODO(#9): edit the message to show the outcome + who + when, remove buttons
-    } else {
-      await ctx.answerCallbackQuery({ text: "❌ Xato: " + result.error });
+      if (booking) {
+        await editDecided(ctx, booking, "✅ Tasdiqlandi", ctx.from?.first_name);
+      }
+      return;
+    }
+
+    // Non-pending on read = race/stale (someone already decided, or a slot
+    // conflict flipped it to rejected inside confirmBooking).
+    const alreadyDecided = booking != null && booking.status !== "pending";
+    await ctx.answerCallbackQuery({
+      text:
+        result.error === "Slot conflict detected"
+          ? "Bu vaqt band — boshqa bron tasdiqlangan"
+          : alreadyDecided
+            ? ALREADY_DECIDED
+            : "Xato: " + (result.error ?? "noma'lum"),
+    });
+    if (alreadyDecided) {
+      await editDecided(ctx, booking!, statusHeader(booking!.status));
     }
   });
 
   bot.callbackQuery(/^reject:(.+)$/, async (ctx: any) => {
     if (!(await ensureAdmin(ctx))) return;
     const bookingId = ctx.match[1];
+
+    // rejectBooking always "succeeds", so guard the race ourselves: if it's no
+    // longer pending, the first admin already decided it.
+    const existing = await getBooking(bookingId);
+    if (existing && existing.status !== "pending") {
+      await ctx.answerCallbackQuery({ text: ALREADY_DECIDED });
+      await editDecided(ctx, existing, statusHeader(existing.status));
+      return;
+    }
+
     await rejectBooking(bookingId);
     await ctx.answerCallbackQuery({ text: "❌ Rad etildi" });
-    // TODO(#9): edit the message; TODO(#14): send alternative slots to the user
+    const booking = await getBooking(bookingId);
+    if (booking) {
+      await editDecided(ctx, booking, "❌ Rad etildi", ctx.from?.first_name);
+    }
+    // TODO(#14): send alternative slots to the user
   });
 
   bot.callbackQuery(/^cancel:(.+)$/, async (ctx: any) => {
