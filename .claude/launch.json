@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "maydon-dev",
+      "runtimeExecutable": "deno",
+      "runtimeArgs": ["run", "--env", "--unstable-kv", "--unstable-cron", "--allow-all", "src/main.ts"],
+      "port": 8000
+    }
+  ]
+}

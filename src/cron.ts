@@ -13,7 +13,7 @@ export async function expirePending(): Promise<void> {
   const localNow = new Date(now.getTime() + tzOffset);
 
   const pending = await kv.list<string>({
-    prefix: keys.pendingByCreated("", ""),
+    prefix: ["pending_by_created"],
   });
 
   for await (const entry of pending) {

@@ -60,8 +60,11 @@ export async function getBooking(id: string): Promise<Booking | null> {
 }
 
 export async function getBookingsByDay(date: string): Promise<Booking[]> {
+  // Note: prefix must NOT include a trailing "" placeholder for the id —
+  // Deno KV prefix matching requires exact equality on every given
+  // component, so a "" component matches nothing (not "starts with").
   const entries = await kv.list<Booking>({
-    prefix: keys.bookingByDay(date, ""),
+    prefix: ["bookings_by_day", date],
   });
   const bookings: Booking[] = [];
   for await (const entry of entries) {
@@ -75,7 +78,7 @@ export async function getBookingsByUser(
   telegramId: number,
 ): Promise<Booking[]> {
   const entries = await kv.list<string>({
-    prefix: keys.bookingByUser(telegramId, ""),
+    prefix: ["bookings_by_user", telegramId],
   });
   const bookings: Booking[] = [];
   for await (const entry of entries) {
@@ -87,7 +90,7 @@ export async function getBookingsByUser(
 
 export async function getPendingRequests(): Promise<Booking[]> {
   const entries = await kv.list<string>({
-    prefix: keys.pendingByCreated("", ""),
+    prefix: ["pending_by_created"],
   });
   const bookings: Booking[] = [];
   for await (const entry of entries) {
@@ -105,7 +108,7 @@ export async function getRecurring(id: string): Promise<Recurring | null> {
 }
 
 export async function getAllRecurring(): Promise<Recurring[]> {
-  const entries = await kv.list<Recurring>({ prefix: keys.recurring("") });
+  const entries = await kv.list<Recurring>({ prefix: ["recurring"] });
   const recurring: Recurring[] = [];
   for await (const entry of entries) {
     recurring.push(entry.value);

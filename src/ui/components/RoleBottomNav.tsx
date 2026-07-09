@@ -37,6 +37,7 @@ export const RoleBottomNav: FC<{ role: Role; activeId: string }> = ({ role, acti
               hx-get={item.href}
               hx-target="#app-content"
               hx-swap="innerHTML"
+              hx-push-url="true"
               class={`flex flex-col items-center justify-center w-full h-full transition-all duration-180 ease-out active:scale-95 ${isActive ? 'text-crm-primary' : 'text-crm-textMuted hover:text-crm-textMain'}`}
             >
               <div class="relative flex items-center justify-center w-8 h-8 mb-0.5">

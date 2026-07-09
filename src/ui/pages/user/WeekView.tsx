@@ -84,12 +84,12 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async ({ selectedDate
                     <button
                       {...(!slot.isBusy ? { 'hx-get': `/app/user/day?date=${targetDate}&start=${slot.start}` } : {})}
                       hx-target="#app-content"
-                      class={`flex-1 border-b border-crm-borderSoft border-dashed last:border-b-0 transition-colors flex items-center px-3 ${slot.isBusy ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'hover:bg-crm-primarySoft/30 active:bg-gray-100 group'}`}
+                      class={`flex-1 border-b border-crm-borderSoft border-dashed last:border-b-0 transition-colors flex items-center px-3 ${slot.isBusy ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'hover:bg-crm-primarySoft/30 active:bg-crm-primarySoft/40'}`}
                       disabled={slot.isBusy}
                     >
                       {slot.isBusy
                         ? <span class="text-[12px] font-bold text-crm-textMuted flex items-center"><Icon name="xCircle" class="w-3.5 h-3.5 mr-1.5" /> Band</span>
-                        : <span class="text-[12px] font-semibold text-crm-primary opacity-0 group-hover:opacity-100 transition-opacity">+ {slot.start} Bron qilish</span>}
+                        : <span class="text-[12px] font-semibold text-crm-primary transition-opacity">+ {slot.start} Bron qilish</span>}
                     </button>
                   ))}
                 </div>

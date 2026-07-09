@@ -159,7 +159,7 @@ export async function notifyAdminsNewRequest(booking: Booking): Promise<void> {
     pending.findIndex((b: Booking) => b.id === booking.id) + 1;
 
   // Get all admins
-  const admins = await Array.fromAsync(kv.list({ prefix: keys.admin(0) }));
+  const admins = await Array.fromAsync(kv.list({ prefix: ["admins"] }));
 
   for (const entry of admins) {
     const adminId = (entry as any).key[1] as number;

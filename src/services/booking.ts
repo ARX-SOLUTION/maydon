@@ -3,7 +3,14 @@
  */
 
 import { ulid } from "ulid";
-import { getBookingsByDay, getSettings, getUser, keys, kv } from "../kv.ts";
+import {
+  getBookingsByDay,
+  getBookingsByUser,
+  getSettings,
+  getUser,
+  keys,
+  kv,
+} from "../kv.ts";
 import type { Booking } from "../models.ts";
 
 // ========== Time Helpers ==========
@@ -42,12 +49,12 @@ export async function validateBookingRequest(
 ): Promise<{ valid: boolean; error?: string }> {
   const settings = await getSettings();
   if (!settings) {
-    return { valid: false, error: "Settings not initialized" };
+    return { valid: false, error: "Sozlamalar topilmadi" };
   }
 
   const user = await getUser(userId);
   if (user?.isBlocked) {
-    return { valid: false, error: "User is blocked" };
+    return { valid: false, error: "Siz bloklangansiz" };
   }
 
   // Snap validation
@@ -56,7 +63,7 @@ export async function validateBookingRequest(
   const endMin = timeToMinutes(end);
 
   if (startMin % snap !== 0 || endMin % snap !== 0) {
-    return { valid: false, error: `Start/end must be on ${snap}-minute snap` };
+    return { valid: false, error: `Vaqt ${snap} daqiqalik qadamda bo'lishi kerak` };
   }
 
   // Duration validation
@@ -64,13 +71,13 @@ export async function validateBookingRequest(
   if (duration < settings.minDurMin) {
     return {
       valid: false,
-      error: `Minimum duration is ${settings.minDurMin} minutes`,
+      error: `Minimal davomiylik ${settings.minDurMin} daqiqa`,
     };
   }
   if (duration > settings.maxDurMin) {
     return {
       valid: false,
-      error: `Maximum duration is ${settings.maxDurMin} minutes`,
+      error: `Maksimal davomiylik ${settings.maxDurMin} daqiqa`,
     };
   }
 
@@ -80,7 +87,7 @@ export async function validateBookingRequest(
   if (startMin < openMin || endMin > closeMin) {
     return {
       valid: false,
-      error: `Outside working hours (${settings.openTime}-${settings.closeTime})`,
+      error: `Ish vaqti tashqarisida (${settings.openTime}-${settings.closeTime})`,
     };
   }
 
@@ -98,34 +105,28 @@ export async function validateBookingRequest(
   if (daysDiff < 0 || daysDiff >= settings.horizonDays) {
     return {
       valid: false,
-      error: `Booking horizon is ${settings.horizonDays} days`,
+      error: `Bron qilish gorizonti ${settings.horizonDays} kun`,
     };
   }
 
-  // Pending limit validation (max 3 active pending)
-  const userBookings = await getBookingsByDay(date);
-  const pendingCount = userBookings.filter(
-    (b: Booking) => b.userId === userId && b.status === "pending",
-  ).length;
+  // Pending limit validation (max 3 active pending, across all days)
+  const ownPendingBookings = (await getBookingsByUser(userId)).filter(
+    (b: Booking) => b.status === "pending",
+  );
 
-  if (pendingCount >= 3) {
-    return { valid: false, error: "Maximum 3 pending requests allowed" };
+  if (ownPendingBookings.length >= 3) {
+    return { valid: false, error: "Maksimal 3 ta kutilayotgan so'rov" };
   }
 
   // Duplicate request validation (same slot, same user)
-  const duplicate = userBookings.find(
-    (b: Booking) =>
-      b.userId === userId &&
-      b.date === date &&
-      b.start === start &&
-      b.end === end &&
-      b.status === "pending",
+  const duplicate = ownPendingBookings.find(
+    (b: Booking) => b.date === date && b.start === start && b.end === end,
   );
 
   if (duplicate) {
     return {
       valid: false,
-      error: "You already have a pending request for this slot",
+      error: "Bu vaqt uchun so'rovingiz allaqachon yuborilgan",
     };
   }
 
@@ -280,12 +281,15 @@ export async function createBooking(
   };
 
   // Atomic write with indexes
-  const ok = await kv
+  const atomic = kv
     .atomic()
     .set(keys.booking(id), booking)
     .set(keys.bookingByDay(date, id), id)
-    .set(keys.pendingByCreated(createdAt, id), id)
-    .commit();
+    .set(keys.pendingByCreated(createdAt, id), id);
+  if (userId != null) {
+    atomic.set(keys.bookingByUser(userId, id), id);
+  }
+  const ok = await atomic.commit();
 
   if (!ok.ok) {
     return { success: false, error: "Failed to create booking" };

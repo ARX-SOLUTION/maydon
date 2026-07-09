@@ -9,6 +9,7 @@ import { AdminSchedule } from './pages/admin/Schedule.tsx';
 import { AdminRecurring } from './pages/admin/Recurring.tsx';
 import { AdminSettings } from './pages/admin/Settings.tsx';
 import { Layout } from './layout.tsx';
+import { authMiddleware } from '../auth.ts';
 
 export const uiRouter = new Hono();
 
@@ -36,7 +37,10 @@ uiRouter.get('/user/week', (c) => {
 uiRouter.get('/user/day', (c) => {
   return c.html(<UserDayView date={c.req.query('date')} start={c.req.query('start')} />);
 });
-uiRouter.get('/user/requests', (c) => c.html(<UserRequests />));
+uiRouter.get('/user/requests', authMiddleware(), (c: any) => {
+  const auth = c.get('auth');
+  return c.html(<UserRequests userId={auth.userId} />);
+});
 
 // Admin routes
 uiRouter.get('/admin/requests', (c) => c.html(<AdminRequests />));

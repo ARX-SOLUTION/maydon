@@ -1,49 +1,116 @@
 /** @jsxImportSource hono/jsx */
+import { raw } from 'hono/html';
 import type { FC } from 'hono/jsx';
 import { AppShell, PageHeader, Card, StatusBadge } from '../../components/UIComponents.tsx';
 import { RoleBottomNav } from '../../components/RoleBottomNav.tsx';
 import { Icon } from '../../components/LucideIcons.tsx';
+import { getBookingsByUser, getPendingRequests } from '../../../kv.ts';
 
-export const UserRequests: FC = () => {
-  const requests = [
-    { id: '1', date: 'Dushanba, 10 Iyul', time: '16:00 - 17:00', status: 'pending', queue: 1 },
-    { id: '2', date: 'Seshanba, 11 Iyul', time: '20:00 - 22:00', status: 'pending', queue: 3 },
-    { id: '3', date: 'Juma, 14 Iyul', time: '19:00 - 20:30', status: 'confirmed' },
-    { id: '4', date: "O'tgan hafta", time: '18:00 - 19:00', status: 'rejected' },
-  ];
+const cancelScript = `
+async function cancelRequest(id) {
+  if (!confirm("So'rovni bekor qilasizmi?")) return;
+  var btn = event.currentTarget;
+  btn.disabled = true;
+  try {
+    var initData = window.Telegram?.WebApp?.initData || '';
+    var res = await fetch('/api/bookings/' + id + '/cancel', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + initData }
+    });
+    var data = await res.json();
+    if (res.ok && data.success) {
+      window.toast('Bekor qilindi', 'success');
+      htmx.ajax('GET', '/app/user/requests', '#app-content');
+    } else {
+      window.toast(data.error || 'Xatolik yuz berdi', 'error');
+      btn.disabled = false;
+    }
+  } catch (e) {
+    window.toast('Xato: ' + e.message, 'error');
+    btn.disabled = false;
+  }
+}
+`;
+
+const statusLabel: Record<string, { label: string; badge: string }> = {
+  pending: { label: 'Kutilmoqda', badge: 'pending' },
+  confirmed: { label: 'Tasdiqlandi', badge: 'success' },
+  rejected: { label: 'Rad etildi', badge: 'danger' },
+  cancelled: { label: 'Bekor qilindi', badge: 'danger' },
+  expired: { label: "Muddati o'tdi", badge: 'muted' },
+  completed: { label: 'Yakunlandi', badge: 'muted' },
+};
+
+export const UserRequests: FC<{ userId: number }> = async ({ userId }) => {
+  const [bookings, pending] = await Promise.all([
+    getBookingsByUser(userId),
+    getPendingRequests(),
+  ]);
+  pending.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+  const requests = bookings
+    .slice()
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map((b) => {
+      const dateObj = new Date(b.date);
+      const displayDate = dateObj.toLocaleDateString('uz-UZ', { weekday: 'long', day: 'numeric', month: 'long' });
+      const queuePos = b.status === 'pending' ? pending.findIndex((p) => p.id === b.id) + 1 : 0;
+      const info = statusLabel[b.status] ?? { label: b.status, badge: 'muted' };
+      return {
+        id: b.id,
+        date: displayDate,
+        time: `${b.start} - ${b.end}`,
+        status: b.status,
+        info,
+        queuePos,
+        cancellable: b.status === 'pending' || b.status === 'confirmed',
+      };
+    });
 
   return (
     <AppShell>
       <PageHeader title="So'rovlarim" subtitle="Sizning bron qilish so'rovlaringiz" />
 
       <div class="px-5 space-y-4">
+        {requests.length === 0 ? (
+          <div class="p-8 text-center text-crm-textMuted text-sm font-medium gsap-stagger">
+            Hali so'rov yubormagansiz
+          </div>
+        ) : null}
         <div class="space-y-3">
-          {requests.map(req => (
-            <Card class="p-4 flex-row items-center justify-between active:scale-[0.98] transition-transform gsap-stagger">
-              <div>
-                <span class="block text-[14px] font-bold text-crm-textMain mb-1">{req.date}</span>
-                <div class="flex items-center text-[18px] font-bold tabular-nums">
-                  <Icon name="clock" class="w-4 h-4 text-crm-textMuted mr-2" />
-                  {req.time}
+          {requests.map((req) => (
+            <Card class="p-4 gsap-stagger" id={`req-${req.id}`}>
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="block text-[14px] font-bold text-crm-textMain mb-1">{req.date}</span>
+                  <div class="flex items-center text-[18px] font-bold tabular-nums">
+                    <Icon name="clock" class="w-4 h-4 text-crm-textMuted mr-2" />
+                    {req.time}
+                  </div>
+                </div>
+                <div class="flex flex-col items-end">
+                  <StatusBadge status={req.info.badge} label={req.info.label} />
+                  {req.status === 'pending' ? (
+                    <span class="text-[12px] font-semibold text-crm-textMuted mt-1.5 flex items-center">
+                      Navbat: <span class="text-crm-primary ml-1 font-bold">#{req.queuePos}</span>
+                    </span>
+                  ) : null}
                 </div>
               </div>
-              <div class="flex flex-col items-end">
-                {req.status === 'pending'
-                  ? <>
-                      <StatusBadge status="pending" label="Kutilmoqda" />
-                      <span class="text-[12px] font-semibold text-crm-textMuted mt-1.5 flex items-center">
-                        Navbat: <span class="text-crm-primary ml-1 font-bold">#{req.queue}</span>
-                      </span>
-                    </>
-                  : req.status === 'confirmed'
-                  ? <StatusBadge status="success" label="Tasdiqlandi" />
-                  : <StatusBadge status="danger" label="Rad etildi" />}
-              </div>
+              {req.cancellable ? (
+                <button
+                  onclick={`cancelRequest('${req.id}')`}
+                  class="mt-3 pt-3 border-t border-crm-borderSoft w-full h-[38px] rounded-[12px] bg-crm-dangerSoft text-crm-danger font-semibold text-[13px] active:scale-95 transition-transform flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="xCircle" class="w-4 h-4" /> Bekor qilish
+                </button>
+              ) : null}
             </Card>
           ))}
         </div>
       </div>
 
+      <script>{raw(cancelScript)}</script>
       <RoleBottomNav role="user" activeId="requests" />
     </AppShell>
   );

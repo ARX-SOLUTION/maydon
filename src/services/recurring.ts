@@ -73,7 +73,7 @@ export async function generateRecurringBookings(): Promise<void> {
     for (const rec of matching) {
       // Check if booking already exists for this date
       const dayBookings = await kv.list<string>({
-        prefix: keys.bookingByDay(dateStr, ""),
+        prefix: ["bookings_by_day", dateStr],
       });
 
       let exists = false;

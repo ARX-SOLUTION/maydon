@@ -131,6 +131,31 @@ document.body.addEventListener('htmx:responseError', function(evt) {
   window.toast(errorMsg, 'error');
 });
 
+// Top progress bar during htmx navigation (SSR page swaps have no built-in feedback)
+var navBar = document.createElement('div');
+navBar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:#F59E0B;z-index:200;width:0%;opacity:0;pointer-events:none;';
+document.body.appendChild(navBar);
+document.body.addEventListener('htmx:beforeRequest', function() {
+  if (window.gsap) {
+    gsap.killTweensOf(navBar);
+    gsap.set(navBar, { width: '0%', opacity: 1 });
+    gsap.to(navBar, { width: '70%', duration: 0.5, ease: 'power1.out' });
+  } else {
+    navBar.style.opacity = 1;
+    navBar.style.width = '70%';
+  }
+});
+document.body.addEventListener('htmx:afterRequest', function() {
+  if (window.gsap) {
+    gsap.to(navBar, { width: '100%', duration: 0.2, ease: 'power1.out', onComplete: function() {
+      gsap.to(navBar, { opacity: 0, duration: 0.2, delay: 0.1, onComplete: function() { gsap.set(navBar, { width: '0%' }); } });
+    }});
+  } else {
+    navBar.style.width = '100%';
+    setTimeout(function() { navBar.style.opacity = 0; navBar.style.width = '0%'; }, 200);
+  }
+});
+
 // GSAP stagger entrance animation
 function runAnimations() {
   var elements = document.querySelectorAll('.gsap-stagger');

@@ -4,9 +4,9 @@
 
 import { Hono } from "hono";
 import { authMiddleware } from "../auth.ts";
-import { getBookingsByUser, getUser, upsertUser } from "../kv.ts";
+import { getBooking, getBookingsByUser, getUser, upsertUser } from "../kv.ts";
 import { getAvailabilityRange } from "../services/availability.ts";
-import { createBooking } from "../services/booking.ts";
+import { cancelBooking, createBooking } from "../services/booking.ts";
 
 const api = new Hono();
 
@@ -91,16 +91,16 @@ api.get("/bookings/my", async (c: any) => {
 // POST /api/bookings — Create booking request
 api.post("/bookings", async (c: any) => {
   const auth = c.get("auth");
-  const { date, start, end } = await c.req.json();
+  const { date, start, end, clientName, clientPhone } = await c.req.json();
 
-  if (!date || !start || !end) {
-    return c.json({ error: "Missing required fields" }, 400);
+  if (!date || !start || !end || !clientName || !clientPhone) {
+    return c.json({ error: "Barcha maydonlarni to'ldiring" }, 400);
   }
 
   const result = await createBooking(
     auth.userId,
-    undefined,
-    undefined,
+    clientName,
+    clientPhone,
     date,
     start,
     end,
@@ -130,6 +130,23 @@ api.post("/bookings", async (c: any) => {
       createdAt: result.booking!.createdAt,
     },
   });
+});
+
+// POST /api/bookings/:id/cancel — User cancels their own request
+api.post("/bookings/:id/cancel", async (c: any) => {
+  const auth = c.get("auth");
+  const id = c.req.param("id");
+
+  const booking = await getBooking(id);
+  if (!booking || booking.userId !== auth.userId) {
+    return c.json({ error: "So'rov topilmadi" }, 404);
+  }
+  if (booking.status !== "pending" && booking.status !== "confirmed") {
+    return c.json({ error: "Bu so'rovni bekor qilib bo'lmaydi" }, 400);
+  }
+
+  await cancelBooking(id);
+  return c.json({ success: true });
 });
 
 export default api;

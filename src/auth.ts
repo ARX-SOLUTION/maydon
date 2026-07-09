@@ -36,24 +36,23 @@ async function verifyInitData(initData: string): Promise<{
     .map(([k, v]) => `${k}=${v}`)
     .join("\n");
 
-  // Create secret key
+  // Secret key per Telegram spec: HMAC-SHA256(bot_token) keyed with "WebAppData"
   const encoder = new TextEncoder();
-  const keyData = encoder.encode("WebAppData");
-  const keyMaterial = await crypto.subtle.importKey(
+  const webAppDataKey = await crypto.subtle.importKey(
     "raw",
-    encoder.encode(botToken),
+    encoder.encode("WebAppData"),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
   );
-  const key = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt: keyData, iterations: 100000 },
-    keyMaterial,
-    256,
+  const secretKey = await crypto.subtle.sign(
+    "HMAC",
+    webAppDataKey,
+    encoder.encode(botToken),
   );
   const finalKey = await crypto.subtle.importKey(
     "raw",
-    key,
+    secretKey,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],

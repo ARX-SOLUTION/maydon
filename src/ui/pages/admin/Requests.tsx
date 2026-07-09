@@ -42,6 +42,7 @@ export const AdminRequests: FC = async () => {
     const displayDate = dateObj.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' });
     return {
       id: req.id,
+      userId: req.userId,
       user: req.clientName || "Noma'lum",
       phone: req.clientPhone || '',
       date: displayDate,
@@ -70,11 +71,13 @@ export const AdminRequests: FC = async () => {
                 </div>
                 <div class="flex flex-col items-end">
                   <span class="text-[12px] font-bold px-2 py-1 bg-crm-surfaceSoft rounded-md text-crm-textMuted mb-1">Navbat: #{req.queue}</span>
-                  <div class="flex gap-1 mt-1">
-                    <a href={`https://t.me/${req.phone.replace(/\s+/g, '')}`} target="_blank" class="w-8 h-8 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center active:scale-95">
-                      <Icon name="check" class="w-4 h-4" />
-                    </a>
-                  </div>
+                  {req.userId ? (
+                    <div class="flex gap-1 mt-1">
+                      <a href={`tg://user?id=${req.userId}`} aria-label="Telegram orqali yozish" class="w-8 h-8 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center active:scale-95">
+                        <Icon name="check" class="w-4 h-4" />
+                      </a>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
