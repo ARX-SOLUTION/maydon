@@ -170,4 +170,58 @@ api.post("/invite/:token/join", async (c: any) => {
   return c.json({ success: true });
 });
 
+// POST /api/requests — Handle user booking form from BookCard (HTMX)
+api.post("/requests", async (c: any) => {
+  const auth = c.get("auth");
+  const body = await c.req.parseBody();
+  const date = body.date as string;
+  const start = body.start as string;
+  const durationStr = body.duration as string;
+
+  if (!date || !start || !durationStr) {
+    return c.json({ error: "Barcha maydonlarni to'ldiring" }, 400);
+  }
+
+  // Calculate end time
+  const [hh, mm] = start.split(":").map(Number);
+  const duration = parseInt(durationStr, 10);
+  const totalMins = hh * 60 + mm + duration;
+  const endH = Math.floor(totalMins / 60) % 24;
+  const endM = totalMins % 60;
+  const end = `${endH.toString().padStart(2, "0")}:${endM.toString().padStart(2, "0")}`;
+
+  // Get user details
+  const user = await getUser(auth.userId);
+  if (!user) {
+    return c.json({ error: "Foydalanuvchi topilmadi" }, 404);
+  }
+
+  const clientName = user.name || "Unknown";
+  const clientPhone = user.phone || "N/A";
+
+  const result = await createBooking(
+    auth.userId,
+    clientName,
+    clientPhone,
+    date,
+    start,
+    end,
+    "user",
+  );
+
+  if (!result.success) {
+    return c.json({ error: result.error }, 400);
+  }
+
+  // Notify admins
+  try {
+    const { notifyAdminsNewRequest } = await import("../bot/handlers.ts");
+    await notifyAdminsNewRequest(result.booking!);
+  } catch (e) {
+    console.error("Failed to notify admins:", e);
+  }
+
+  return c.json({ success: true });
+});
+
 export default api;

@@ -43,7 +43,6 @@ const adminNav: NavItem[] = [
 
 const userNav: NavItem[] = [
   { id: "week", label: "Hafta", icon: "calendar", href: "/app/user/week" },
-  { id: "day", label: "Kun", icon: "clock", href: "/app/user/day" },
   {
     id: "requests",
     label: "So'rovlarim",
