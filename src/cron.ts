@@ -4,13 +4,12 @@
 
 import { getBookingsByDay, keys, kv } from "./kv.ts";
 import type { Booking } from "./models.ts";
+import { addCalendarDays, tashkentDate, tashkentDateTimeKey } from "./services/booking.ts";
 import { generateRecurringBookings } from "./services/recurring.ts";
 
 // Run every 15 minutes
 export async function expirePending(): Promise<void> {
-  const now = new Date();
-  const tzOffset = 5 * 60 * 60 * 1000; // UTC+5
-  const localNow = new Date(now.getTime() + tzOffset);
+  const localNowKey = tashkentDateTimeKey();
 
   const pending = await kv.list<string>({
     prefix: ["pending_by_created"],
@@ -24,9 +23,7 @@ export async function expirePending(): Promise<void> {
     }
 
     const b = booking.value;
-    const startDateTime = new Date(`${b.date}T${b.start}:00+05:00`);
-
-    if (startDateTime < localNow) {
+    if (`${b.date}T${b.start}` < localNowKey) {
       await kv.atomic()
         .check(booking)
         .set(keys.booking(b.id), {
@@ -43,27 +40,31 @@ export async function expirePending(): Promise<void> {
 
 // Run every 15 minutes
 export async function completeBookings(): Promise<void> {
-  const now = new Date();
-  const tzOffset = 5 * 60 * 60 * 1000; // UTC+5
-  const localNow = new Date(now.getTime() + tzOffset);
+  const localNowKey = tashkentDateTimeKey();
+  const today = tashkentDate();
 
   // Check last 7 days
   for (let i = 0; i < 7; i++) {
-    const date = new Date(localNow);
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = addCalendarDays(today, -i);
 
     const bookings = await getBookingsByDay(dateStr);
 
     for (const b of bookings) {
       if (b.status === "confirmed") {
-        const endDateTime = new Date(`${b.date}T${b.end}:00+05:00`);
-        if (endDateTime < localNow) {
-          await kv.set(keys.booking(b.id), {
-            ...b,
-            status: "completed",
-            decidedAt: new Date().toISOString(),
-          });
+        if (`${b.date}T${b.end}` < localNowKey) {
+          const current = await kv.get<Booking>(keys.booking(b.id));
+          if (!current.value || current.value.status !== "confirmed") continue;
+          const dayVersion = await kv.get<number>(keys.dayVersion(b.date));
+          await kv.atomic()
+            .check(current)
+            .check(dayVersion)
+            .set(keys.booking(b.id), {
+              ...current.value,
+              status: "completed",
+              decidedAt: new Date().toISOString(),
+            })
+            .set(keys.dayVersion(b.date), (dayVersion.value ?? 0) + 1)
+            .commit();
         }
       }
     }

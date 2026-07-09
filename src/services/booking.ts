@@ -13,7 +13,157 @@ import {
 } from "../kv.ts";
 import type { Booking } from "../models.ts";
 
+export interface BookingDecisionActor {
+  id?: number;
+  name?: string;
+}
+
 // ========== Time Helpers ==========
+
+export const TASHKENT_TIME_ZONE = "Asia/Tashkent";
+const MINUTES_PER_DAY = 24 * 60;
+
+function formatTashkentParts(now: Date): Record<string, string> {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: TASHKENT_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  return Object.fromEntries(
+    parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]),
+  );
+}
+
+export function tashkentDate(now = new Date()): string {
+  const parts = formatTashkentParts(now);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function tashkentDateTimeKey(now = new Date()): string {
+  const parts = formatTashkentParts(now);
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
+export function addCalendarDays(date: string, days: number): string {
+  const parsed = parseYmd(date);
+  if (!parsed) throw new Error(`Invalid calendar date: ${date}`);
+  const value = new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day));
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
+}
+
+export function calendarDayOfWeek(date: string): number {
+  const parsed = parseYmd(date);
+  if (!parsed) throw new Error(`Invalid calendar date: ${date}`);
+  return new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day)).getUTCDay();
+}
+
+function parseYmd(date: string): { year: number; month: number; day: number } | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const value = new Date(Date.UTC(year, month - 1, day));
+  if (
+    value.getUTCFullYear() !== year ||
+    value.getUTCMonth() !== month - 1 ||
+    value.getUTCDate() !== day
+  ) return null;
+  return { year, month, day };
+}
+
+function calendarDayDifference(from: string, to: string): number {
+  const fromParts = parseYmd(from);
+  const toParts = parseYmd(to);
+  if (!fromParts || !toParts) return Number.NaN;
+  const fromMs = Date.UTC(fromParts.year, fromParts.month - 1, fromParts.day);
+  const toMs = Date.UTC(toParts.year, toParts.month - 1, toParts.day);
+  return Math.round((toMs - fromMs) / (24 * 60 * 60 * 1000));
+}
+
+function isValidTime(time: string): boolean {
+  const match = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!match) return false;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  return hour >= 0 && hour < 24 && minute >= 0 && minute < 60;
+}
+
+export function validateSettings(settings: {
+  openTime: string;
+  closeTime: string;
+  horizonDays: number;
+  minDurMin: number;
+  maxDurMin: number;
+  snapMin: number;
+}): string | null {
+  if (!isValidTime(settings.openTime) || !isValidTime(settings.closeTime)) {
+    return "Ish vaqti noto'g'ri";
+  }
+  const openMin = timeToMinutes(settings.openTime);
+  const closeMin = timeToMinutes(settings.closeTime);
+  if (openMin >= closeMin) return "Ish vaqti oralig'i noto'g'ri";
+  if (!Number.isInteger(settings.horizonDays) || settings.horizonDays <= 0) {
+    return "Gorizont musbat butun son bo'lishi kerak";
+  }
+  if (!Number.isInteger(settings.minDurMin) || settings.minDurMin <= 0) {
+    return "Minimal davomiylik noto'g'ri";
+  }
+  if (!Number.isInteger(settings.maxDurMin) || settings.maxDurMin < settings.minDurMin) {
+    return "Maksimal davomiylik noto'g'ri";
+  }
+  if (!Number.isInteger(settings.snapMin) || settings.snapMin <= 0 || settings.snapMin > MINUTES_PER_DAY) {
+    return "Vaqt qadami 1-1440 daqiqa bo'lishi kerak";
+  }
+  return null;
+}
+
+export function validateSlot(
+  date: string,
+  start: string,
+  end: string,
+  settings: {
+    openTime: string;
+    closeTime: string;
+    horizonDays: number;
+    minDurMin: number;
+    maxDurMin: number;
+    snapMin: number;
+  },
+  now = new Date(),
+): string | null {
+  const settingsError = validateSettings(settings);
+  if (settingsError) return settingsError;
+  if (!parseYmd(date)) return "Sana noto'g'ri";
+  if (!isValidTime(start) || !isValidTime(end)) return "Vaqt noto'g'ri";
+
+  const startMin = timeToMinutes(start);
+  const endMin = timeToMinutes(end);
+  if (startMin >= endMin) return "Tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak";
+  if (startMin % settings.snapMin !== 0 || endMin % settings.snapMin !== 0) {
+    return `Vaqt ${settings.snapMin} daqiqalik qadamda bo'lishi kerak`;
+  }
+  const duration = endMin - startMin;
+  if (duration < settings.minDurMin) return `Minimal davomiylik ${settings.minDurMin} daqiqa`;
+  if (duration > settings.maxDurMin) return `Maksimal davomiylik ${settings.maxDurMin} daqiqa`;
+
+  const openMin = timeToMinutes(settings.openTime);
+  const closeMin = timeToMinutes(settings.closeTime);
+  if (startMin < openMin || endMin > closeMin) {
+    return `Ish vaqti tashqarisida (${settings.openTime}-${settings.closeTime})`;
+  }
+
+  const daysDiff = calendarDayDifference(tashkentDate(now), date);
+  if (!Number.isFinite(daysDiff) || daysDiff < 0 || daysDiff >= settings.horizonDays) {
+    return `Bron qilish gorizonti ${settings.horizonDays} kun`;
+  }
+  return null;
+}
 
 export function timeToMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
@@ -63,57 +213,8 @@ export async function validateBookingRequest(
     };
   }
 
-  // Snap validation
-  const snap = settings.snapMin;
-  const startMin = timeToMinutes(start);
-  const endMin = timeToMinutes(end);
-
-  if (startMin % snap !== 0 || endMin % snap !== 0) {
-    return { valid: false, error: `Vaqt ${snap} daqiqalik qadamda bo'lishi kerak` };
-  }
-
-  // Duration validation
-  const duration = endMin - startMin;
-  if (duration < settings.minDurMin) {
-    return {
-      valid: false,
-      error: `Minimal davomiylik ${settings.minDurMin} daqiqa`,
-    };
-  }
-  if (duration > settings.maxDurMin) {
-    return {
-      valid: false,
-      error: `Maksimal davomiylik ${settings.maxDurMin} daqiqa`,
-    };
-  }
-
-  // Working hours validation
-  const openMin = timeToMinutes(settings.openTime);
-  const closeMin = timeToMinutes(settings.closeTime);
-  if (startMin < openMin || endMin > closeMin) {
-    return {
-      valid: false,
-      error: `Ish vaqti tashqarisida (${settings.openTime}-${settings.closeTime})`,
-    };
-  }
-
-  // Horizon validation
-  const today = new Date();
-  const tzOffset = 5 * 60 * 60 * 1000; // UTC+5
-  const localToday = new Date(today.getTime() + tzOffset);
-  localToday.setHours(0, 0, 0, 0);
-
-  const bookingDate = new Date(date + "T00:00:00");
-  const daysDiff = Math.floor(
-    (bookingDate.getTime() - localToday.getTime()) / (1000 * 60 * 60 * 24),
-  );
-
-  if (daysDiff < 0 || daysDiff >= settings.horizonDays) {
-    return {
-      valid: false,
-      error: `Bron qilish gorizonti ${settings.horizonDays} kun`,
-    };
-  }
+  const slotError = validateSlot(date, start, end, settings);
+  if (slotError) return { valid: false, error: slotError };
 
   // Pending limit validation (max 3 active pending, across all days)
   const ownPendingBookings = (await getBookingsByUser(userId)).filter(
@@ -160,21 +261,28 @@ async function checkOverlapWithConfirmed(
 
 export async function confirmBooking(
   id: string,
+  actor?: BookingDecisionActor,
 ): Promise<{ success: boolean; error?: string }> {
   const booking = await kv.get<Booking>(keys.booking(id));
   if (!booking.value) {
     return { success: false, error: "Booking not found" };
   }
 
-  const b = booking.value;
-  if (b.status !== "pending") {
+  if (booking.value.status !== "pending") {
     return { success: false, error: "Booking is not pending" };
   }
 
-  const date = b.date;
   const maxRetries = 3;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const current = await kv.get<Booking>(keys.booking(id));
+    if (!current.value) return { success: false, error: "Booking not found" };
+    if (current.value.status !== "pending") {
+      return { success: false, error: "Booking is not pending" };
+    }
+    const b = current.value;
+    const date = b.date;
+
     // 1. Read all bookings for the day
     const dayBookings = await getBookingsByDay(date);
 
@@ -191,11 +299,14 @@ export async function confirmBooking(
     // 4. Atomic commit
     const ok = await kv
       .atomic()
+      .check(current)
       .check(dayVer)
       .set(keys.booking(id), {
         ...b,
         status: "confirmed",
         decidedAt: new Date().toISOString(),
+        decidedBy: actor?.id,
+        decidedByName: actor?.name,
       })
       .set(keys.dayVersion(date), (dayVer.value ?? 0) + 1)
       .delete(keys.pendingByCreated(b.createdAt, id))
@@ -231,17 +342,23 @@ async function rejectOverlappingPending(
   }
 }
 
-export async function rejectBooking(id: string): Promise<void> {
+export async function rejectBooking(
+  id: string,
+  actor?: BookingDecisionActor,
+): Promise<void> {
   const booking = await kv.get<Booking>(keys.booking(id));
   if (!booking.value) return;
 
   const b = booking.value;
+  if (b.status !== "pending") return;
   await kv.atomic()
     .check(booking)
     .set(keys.booking(id), {
       ...b,
       status: "rejected",
       decidedAt: new Date().toISOString(),
+      decidedBy: actor?.id,
+      decidedByName: actor?.name,
     })
     .delete(keys.pendingByCreated(b.createdAt, id))
     .commit();
@@ -249,6 +366,7 @@ export async function rejectBooking(id: string): Promise<void> {
 
 export async function cancelBooking(
   id: string,
+  actor?: BookingDecisionActor,
 ): Promise<{ success: boolean; error?: string; booking?: Booking }> {
   const booking = await kv.get<Booking>(keys.booking(id));
   if (!booking.value) {
@@ -262,17 +380,31 @@ export async function cancelBooking(
   if (b.status === "completed") {
     return { success: false, error: "Cannot cancel completed bookings" };
   }
+  if (b.status === "rejected" || b.status === "expired") {
+    return { success: false, error: `Cannot cancel ${b.status} bookings` };
+  }
 
   const updated: Booking = {
     ...b,
     status: "cancelled",
     decidedAt: new Date().toISOString(),
+    decidedBy: actor?.id,
+    decidedByName: actor?.name,
   };
 
-  const ok = await kv.atomic()
+  const dayVersion = b.status === "confirmed"
+    ? await kv.get<number>(keys.dayVersion(b.date))
+    : null;
+  const atomic = kv.atomic()
     .check(booking)
-    .set(keys.booking(id), updated)
-    .commit();
+    .set(keys.booking(id), updated);
+  if (b.status === "pending") {
+    atomic.delete(keys.pendingByCreated(b.createdAt, b.id));
+  }
+  if (dayVersion) {
+    atomic.check(dayVersion).set(keys.dayVersion(b.date), (dayVersion.value ?? 0) + 1);
+  }
+  const ok = await atomic.commit();
 
   if (!ok.ok) {
     return { success: false, error: "Failed to cancel due to concurrent update" };
@@ -292,17 +424,27 @@ export async function createBooking(
   end: string,
   source: "user" | "admin" | "recurring" = "user",
   recurringId?: string,
+  bookingId?: string,
+  dedupeKey?: Deno.KvKey,
 ): Promise<{ success: boolean; booking?: Booking; error?: string }> {
-  const validation =
-    source === "user"
-      ? await validateBookingRequest(userId!, date, start, end)
-      : { valid: true };
+  const settings = await getSettings() ?? {
+    openTime: "08:00",
+    closeTime: "23:00",
+    horizonDays: 7,
+    minDurMin: 60,
+    maxDurMin: 180,
+    snapMin: 30,
+  };
+  const slotError = validateSlot(date, start, end, settings);
+  const validation = source === "user"
+    ? await validateBookingRequest(userId!, date, start, end)
+    : { valid: !slotError, error: slotError ?? undefined };
 
   if (!validation.valid) {
     return { success: false, error: validation.error };
   }
 
-  const id = ulid();
+  const id = bookingId ?? ulid();
   const createdAt = new Date().toISOString();
 
   const token = ulid();
@@ -315,7 +457,7 @@ export async function createBooking(
     date,
     start,
     end,
-    status: source === "admin" ? "confirmed" : "pending",
+    status: source === "user" ? "pending" : "confirmed",
     source,
     recurringId,
     createdAt,
@@ -323,23 +465,38 @@ export async function createBooking(
     participantIds: [],
   };
 
-  // Atomic write with indexes
-  const atomic = kv
-    .atomic()
-    .set(keys.booking(id), booking)
-    .set(keys.bookingByDay(date, id), id)
-    .set(keys.pendingByCreated(createdAt, id), id)
-    .set(keys.inviteToken(token), id);
-  if (userId != null) {
-    atomic.set(keys.bookingByUser(userId, id), id);
-  }
-  const ok = await atomic.commit();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const dayBookings = await getBookingsByDay(date);
+    if (
+      booking.status === "confirmed" &&
+      dayBookings.some((existing) =>
+        existing.status === "confirmed" && overlaps(start, end, existing.start, existing.end)
+      )
+    ) {
+      return { success: false, error: "Slot conflict detected" };
+    }
 
-  if (!ok.ok) {
-    return { success: false, error: "Failed to create booking" };
+    const dayVersion = await kv.get<number>(keys.dayVersion(date));
+    const atomic = kv
+      .atomic()
+      .check(dayVersion)
+      .set(keys.booking(id), booking)
+      .set(keys.bookingByDay(date, id), id)
+      .set(keys.inviteToken(token), id)
+      .set(keys.dayVersion(date), (dayVersion.value ?? 0) + 1);
+    if (booking.status === "pending") {
+      atomic.set(keys.pendingByCreated(createdAt, id), id);
+    }
+    if (dedupeKey) {
+      atomic.check(await kv.get(dedupeKey)).set(dedupeKey, id);
+    }
+    if (userId != null) {
+      atomic.set(keys.bookingByUser(userId, id), id);
+    }
+    const ok = await atomic.commit();
+    if (ok.ok) return { success: true, booking };
   }
-
-  return { success: true, booking };
+  return { success: false, error: "Failed to create booking" };
 }
 
 // ========== Squad Invitations ==========

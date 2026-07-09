@@ -53,7 +53,7 @@ async function signInitData(params: URLSearchParams): Promise<string> {
 async function getAuthHeader(userId: number, firstName: string): Promise<string> {
   const params = new URLSearchParams();
   params.set("user", JSON.stringify({ id: userId, first_name: firstName }));
-  params.set("auth_date", "1700000000");
+  params.set("auth_date", String(Math.floor(Date.now() / 1000)));
   params.set("hash", await signInitData(params));
   return "Bearer " + params.toString();
 }
@@ -408,15 +408,17 @@ Deno.test("Tier 4.1: Interactive admin UI scenario: schedule page includes cance
   );
   assertExists(createResult.booking);
   const bookingId = createResult.booking.id;
+  const authHeader = await getAuthHeader(adminId, "Admin User");
 
   // 1. GET Schedule Page: should contain the cancel button referencing our booking id
-  const resGet1 = await app.request("/app/admin/schedule?date=2026-07-15");
+  const resGet1 = await app.request("/app/admin/schedule?date=2026-07-15", {
+    headers: { "Authorization": authHeader },
+  });
   assertEquals(resGet1.status, 200);
   const html1 = await resGet1.text();
   assertStringIncludes(html1, `cancelAdminBooking(&#39;${bookingId}&#39;, &#39;2026-07-15&#39;)`);
 
   // 2. Call Cancellation API route (mocking AJAX post)
-  const authHeader = await getAuthHeader(adminId, "Admin User");
   const resCancel = await app.request(`/api/admin/bookings/${bookingId}/cancel`, {
     method: "POST",
     headers: {
@@ -426,7 +428,9 @@ Deno.test("Tier 4.1: Interactive admin UI scenario: schedule page includes cance
   assertEquals(resCancel.status, 200);
 
   // 3. GET Schedule Page again: should NOT contain the cancel button referencing our booking id
-  const resGet2 = await app.request("/app/admin/schedule?date=2026-07-15");
+  const resGet2 = await app.request("/app/admin/schedule?date=2026-07-15", {
+    headers: { "Authorization": authHeader },
+  });
   assertEquals(resGet2.status, 200);
   const html2 = await resGet2.text();
   assertEquals(html2.includes(`cancelAdminBooking(&#39;${bookingId}&#39;, &#39;2026-07-15&#39;)`), false);

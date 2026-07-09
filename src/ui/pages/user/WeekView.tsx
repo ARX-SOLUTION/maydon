@@ -6,9 +6,23 @@ import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
 import { Icon } from "../../components/LucideIcons.tsx";
 import { getDayAvailability } from "../../../services/availability.ts";
 import { formatUzShortDay, toYmd } from "../../date.ts";
+import { getSettings } from "../../../kv.ts";
 
-export const UserWeekView: FC<{ selectedDate?: string }> = async (
-  { selectedDate },
+let botUsernamePromise: Promise<string | null> | null = null;
+
+function resolveBotUsername(): Promise<string | null> {
+  const configured = Deno.env.get("TELEGRAM_BOT_USERNAME")?.replace(/^@/, "");
+  if (configured) return Promise.resolve(configured);
+
+  botUsernamePromise ??= import("../../../bot/client.ts")
+    .then(({ bot }) => bot.api.getMe())
+    .then((me) => me.username ?? null)
+    .catch(() => null);
+  return botUsernamePromise;
+}
+
+export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = async (
+  { selectedDate, userId },
 ) => {
   const targetDateObj = selectedDate ? new Date(selectedDate) : new Date();
   const targetDate = toYmd(targetDateObj);
@@ -27,6 +41,7 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
     };
   });
 
+  const settings = await getSettings();
   let dayData: { slots: any[]; openTime: string; closeTime: string };
   try {
     dayData = await getDayAvailability(targetDate);
@@ -42,7 +57,6 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
       start: string;
       end: string;
       bookingId?: string;
-      bookedBy?: string;
       userId?: number | null;
       participantCount?: number;
       inviteToken?: string;
@@ -65,13 +79,19 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
         start: slot.start,
         end: slot.end,
         bookingId: slot.bookingId,
-        bookedBy: slot.bookedBy,
         userId: slot.userId,
         participantCount: slot.participantCount,
-        inviteToken: slot.inviteToken,
+        inviteToken: userId !== undefined && slot.userId === userId
+          ? slot.inviteToken
+          : undefined,
       });
     }
   }
+
+  const hasOwnedInvites = segments.some((segment) =>
+    segment.kind === "busy" && Boolean(segment.inviteToken)
+  );
+  const botUsername = hasOwnedInvites ? await resolveBotUsername() : null;
 
   return (
     <AppShell>
@@ -214,7 +234,7 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
           <div class="p-4 border-b border-crm-borderSoft bg-crm-surfaceSoft flex justify-between items-center gap-3">
             <span class="font-bold text-[15px]">Bo'sh vaqtlar</span>
             <span class="text-[12px] font-medium text-crm-textMuted bg-crm-surface px-2 py-1 rounded-md shadow-sm">
-              30 daqiqa
+              {settings?.snapMin ?? 30} daqiqa
             </span>
           </div>
           <div class="px-4 py-2 border-b border-crm-borderSoft flex flex-wrap items-center gap-x-4 gap-y-2 bg-crm-surface">
@@ -265,9 +285,7 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
                       <div class="flex flex-col min-w-0">
                         <span class="flex items-center gap-1.5 text-[12px] font-semibold text-crm-primary">
                           <Icon name="profile" class="w-4 h-4 shrink-0" />
-                          <span class="truncate">
-                            {seg.bookedBy ? `Band · ${seg.bookedBy}` : "Band"}
-                          </span>
+                          <span class="truncate">Band</span>
                         </span>
                         {seg.participantCount !== undefined && seg.participantCount > 0 && (
                           <span class="text-[11px] font-medium text-crm-primary/70 mt-0.5">
@@ -276,10 +294,9 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
                         )}
                       </div>
                     </div>
-                    {seg.inviteToken && (
+                    {seg.inviteToken && botUsername && (
                       <button
-                        data-user-id={seg.userId}
-                        data-invite-link={`https://t.me/your_bot_username/app?startapp=invite_${seg.inviteToken}`}
+                        data-invite-link={`https://t.me/${botUsername}/app?startapp=invite_${seg.inviteToken}`}
                         class="hidden invite-copy-btn items-center justify-center p-2 rounded-full bg-crm-primary text-white shrink-0 tap-scale focus-ring"
                         aria-label="Taklifnoma havolasini nusxalash"
                       >
@@ -294,28 +311,22 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
         <script>
           {raw(`
             (function setupInviteButtons() {
-              var initDataUnsafe = window.Telegram?.WebApp?.initDataUnsafe || {};
-              var currentUserId = initDataUnsafe.user?.id;
-              if (!currentUserId) return;
-              
               var btns = document.querySelectorAll('.invite-copy-btn');
               btns.forEach(function(btn) {
-                if (parseInt(btn.getAttribute('data-user-id')) === currentUserId) {
-                  btn.classList.remove('hidden');
-                  btn.classList.add('flex');
-                  
-                  btn.addEventListener('click', function() {
-                    var link = btn.getAttribute('data-invite-link');
-                    // Fallback to clipboard API if Telegram copy fails or doesn't exist
-                    if (navigator.clipboard) {
-                      navigator.clipboard.writeText(link).then(() => {
-                        window.showToast?.('Havola nusxalandi! Do\\'stlaringizga yuboring.', 'success');
-                      });
-                    } else {
-                      window.showToast?.('Nusxalashda xatolik yuz berdi.', 'error');
-                    }
+                btn.classList.remove('hidden');
+                btn.classList.add('flex');
+                btn.addEventListener('click', function() {
+                  var link = btn.getAttribute('data-invite-link');
+                  if (!link || !navigator.clipboard) {
+                    window.toast('Nusxalashda xatolik yuz berdi.', 'error');
+                    return;
+                  }
+                  navigator.clipboard.writeText(link).then(function() {
+                    window.toast('Havola nusxalandi! Do\\'stlaringizga yuboring.', 'success');
+                  }).catch(function() {
+                    window.toast('Nusxalashda xatolik yuz berdi.', 'error');
                   });
-                }
+                });
               });
             })();
           `)}

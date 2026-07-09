@@ -66,12 +66,17 @@ model Booking {
   recurringId   String?
   createdAt     DateTime       @default(now())
   decidedAt     DateTime?
+  decidedBy     BigInt?
+  decidedByName String?
+  inviteToken   String?        @unique
+  participantIds BigInt[]      @default([])
   events        BookingEvent[]
   notifications Notification[]
 
   @@index([date])
   @@index([userId])
   @@index([status])
+  @@unique([recurringId, date])
 }
 
 // Audit trail of status transitions — powers user history + "who decided when".

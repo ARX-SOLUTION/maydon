@@ -53,11 +53,23 @@ Deno.test("authMiddleware — invalid signature returns 401, not 500", async () 
 Deno.test("authMiddleware — correctly signed initData returns 200", async () => {
   const params = new URLSearchParams();
   params.set("user", JSON.stringify({ id: 42, first_name: "Test" }));
-  params.set("auth_date", "1700000000");
+  params.set("auth_date", String(Math.floor(Date.now() / 1000)));
   params.set("hash", await signInitData(params));
 
   const res = await testApp().request("/ping", {
     headers: { Authorization: "Bearer " + params.toString() },
   });
   assertEquals(res.status, 200);
+});
+
+Deno.test("authMiddleware — stale initData is rejected", async () => {
+  const params = new URLSearchParams();
+  params.set("user", JSON.stringify({ id: 42, first_name: "Test" }));
+  params.set("auth_date", String(Math.floor(Date.now() / 1000) - 90_000));
+  params.set("hash", await signInitData(params));
+
+  const res = await testApp().request("/ping", {
+    headers: { Authorization: "Bearer " + params.toString() },
+  });
+  assertEquals(res.status, 401);
 });

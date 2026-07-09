@@ -2,7 +2,13 @@
  * Availability Service — Get free/busy slots
  */
 
-import { minutesToTime, overlaps, timeToMinutes } from "./booking.ts";
+import {
+  addCalendarDays,
+  minutesToTime,
+  overlaps,
+  timeToMinutes,
+  validateSettings,
+} from "./booking.ts";
 import { getBookingsByDay, getSettings } from "../kv.ts";
 import type { Booking, Settings } from "../models.ts";
 
@@ -29,6 +35,8 @@ export async function getDayAvailability(
   if (!settings) {
     throw new Error("Settings not initialized");
   }
+  const settingsError = validateSettings(settings);
+  if (settingsError) throw new Error(`Invalid settings: ${settingsError}`);
 
   const bookings = await getBookingsByDay(date);
   const confirmedBookings = bookings.filter(
@@ -42,7 +50,8 @@ export async function getDayAvailability(
   const slots: TimeSlot[] = [];
 
   for (let startMin = openMin; startMin < closeMin; startMin += snap) {
-    const endMin = startMin + snap;
+    const endMin = Math.min(startMin + snap, closeMin);
+    if (endMin <= startMin) break;
     const startTime = minutesToTime(startMin);
     const endTime = minutesToTime(endMin);
 
@@ -81,11 +90,7 @@ export async function getAvailabilityRange(
     throw new Error("Settings not initialized");
   }
 
-  const start = new Date(fromDate);
-  const end = new Date(toDate);
-
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split("T")[0];
+  for (let dateStr = fromDate; dateStr <= toDate; dateStr = addCalendarDays(dateStr, 1)) {
     const day = await getDayAvailability(dateStr, settings);
     result[dateStr] = day.slots;
   }

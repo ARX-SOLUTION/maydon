@@ -56,6 +56,10 @@ const toBooking = (r: BookingModel): Booking => ({
   recurringId: r.recurringId ?? undefined,
   createdAt: r.createdAt.toISOString(),
   decidedAt: r.decidedAt?.toISOString(),
+  decidedBy: fromBig(r.decidedBy),
+  decidedByName: r.decidedByName ?? undefined,
+  inviteToken: r.inviteToken ?? undefined,
+  participantIds: r.participantIds.map(Number),
 });
 
 const bookingData = (b: Booking) => ({
@@ -71,6 +75,10 @@ const bookingData = (b: Booking) => ({
   recurringId: b.recurringId ?? null,
   createdAt: new Date(b.createdAt),
   decidedAt: b.decidedAt ? new Date(b.decidedAt) : null,
+  decidedBy: toBig(b.decidedBy),
+  decidedByName: b.decidedByName ?? null,
+  inviteToken: b.inviteToken ?? null,
+  participantIds: (b.participantIds ?? []).map((id) => BigInt(id)),
 });
 
 const toRecurring = (r: RecurringModel): Recurring => ({

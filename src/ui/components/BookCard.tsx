@@ -2,17 +2,52 @@
 import { raw } from "hono/html";
 import type { FC } from "hono/jsx";
 import { Icon } from "./LucideIcons.tsx";
+import { getSettings } from "../../kv.ts";
 
-export const UserBookCard: FC<{ date?: string; start?: string }> = ({ date, start }) => {
-  if (!date || !start) {
+function formatDuration(durationMin: number): string {
+  if (durationMin % 60 === 0) return `${durationMin / 60} soat`;
+  return `${durationMin} daqiqa`;
+}
+
+export const UserBookCard: FC<{ date?: string; start?: string }> = async ({
+  date,
+  start,
+}) => {
+  if (
+    !date ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    !start ||
+    !/^\d{2}:\d{2}$/.test(start)
+  ) {
     return <div class="hidden"></div>; // Invalid request
   }
 
-  // Parse start hour
-  const [hh, mm] = start.split(":");
-  
+  const settings = await getSettings() ?? {
+    minDurMin: 60,
+    maxDurMin: 180,
+    snapMin: 30,
+  };
+  const snapMin = Number.isInteger(settings.snapMin) && settings.snapMin > 0
+    ? settings.snapMin
+    : 30;
+  const minDurMin = Number.isInteger(settings.minDurMin) && settings.minDurMin > 0
+    ? settings.minDurMin
+    : 60;
+  const maxDurMin = Number.isInteger(settings.maxDurMin) && settings.maxDurMin >= minDurMin
+    ? settings.maxDurMin
+    : Math.max(180, minDurMin);
+  const firstDuration = Math.ceil(minDurMin / snapMin) * snapMin;
+  const durations = Array.from(
+    { length: Math.floor((maxDurMin - firstDuration) / snapMin) + 1 },
+    (_, index) => firstDuration + index * snapMin,
+  ).filter((duration) => duration >= minDurMin && duration <= maxDurMin);
+
   return (
-    <div id="book-modal-wrapper" class="relative z-50">
+    <div
+      id="book-modal-wrapper"
+      class="relative z-50"
+      data-refresh-date={date}
+    >
       {/* Backdrop */}
       <div 
         id="book-modal-backdrop" 
@@ -44,30 +79,20 @@ export const UserBookCard: FC<{ date?: string; start?: string }> = ({ date, star
               <div>
                 <label class="block text-sm font-semibold text-crm-textMain mb-2">Qancha vaqt o'ynaysiz?</label>
                 <div class="grid grid-cols-2 gap-3">
-                  <label class="relative flex cursor-pointer">
-                    <input type="radio" name="duration" value="60" class="peer sr-only" checked />
-                    <div class="w-full flex items-center justify-center p-3 rounded-xl border-2 border-crm-borderSoft bg-crm-surfaceSoft text-crm-textMain font-medium peer-checked:border-crm-primary peer-checked:bg-crm-primarySoft/30 transition-colors">
-                      1 soat
-                    </div>
-                  </label>
-                  <label class="relative flex cursor-pointer">
-                    <input type="radio" name="duration" value="90" class="peer sr-only" />
-                    <div class="w-full flex items-center justify-center p-3 rounded-xl border-2 border-crm-borderSoft bg-crm-surfaceSoft text-crm-textMain font-medium peer-checked:border-crm-primary peer-checked:bg-crm-primarySoft/30 transition-colors">
-                      1.5 soat
-                    </div>
-                  </label>
-                  <label class="relative flex cursor-pointer">
-                    <input type="radio" name="duration" value="120" class="peer sr-only" />
-                    <div class="w-full flex items-center justify-center p-3 rounded-xl border-2 border-crm-borderSoft bg-crm-surfaceSoft text-crm-textMain font-medium peer-checked:border-crm-primary peer-checked:bg-crm-primarySoft/30 transition-colors">
-                      2 soat
-                    </div>
-                  </label>
-                  <label class="relative flex cursor-pointer">
-                    <input type="radio" name="duration" value="180" class="peer sr-only" />
-                    <div class="w-full flex items-center justify-center p-3 rounded-xl border-2 border-crm-borderSoft bg-crm-surfaceSoft text-crm-textMain font-medium peer-checked:border-crm-primary peer-checked:bg-crm-primarySoft/30 transition-colors">
-                      3 soat
-                    </div>
-                  </label>
+                  {durations.map((duration, index) => (
+                    <label class="relative flex cursor-pointer">
+                      <input
+                        type="radio"
+                        name="duration"
+                        value={duration}
+                        class="peer sr-only"
+                        checked={index === 0}
+                      />
+                      <div class="w-full flex items-center justify-center p-3 rounded-xl border-2 border-crm-borderSoft bg-crm-surfaceSoft text-crm-textMain font-medium peer-checked:border-crm-primary peer-checked:bg-crm-primarySoft/30 transition-colors">
+                        {formatDuration(duration)}
+                      </div>
+                    </label>
+                  ))}
                 </div>
               </div>
 
@@ -121,7 +146,8 @@ export const UserBookCard: FC<{ date?: string; start?: string }> = ({ date, star
                  window.closeBookCard();
                  setTimeout(function() {
                     // refresh week view
-                    htmx.ajax('GET', '/app/user/week?date=${date}', '#app-content');
+                    var refreshDate = wrapper.getAttribute('data-refresh-date');
+                    htmx.ajax('GET', '/app/user/week?date=' + encodeURIComponent(refreshDate || ''), '#app-content');
                  }, 500);
               }
             }, { once: true });

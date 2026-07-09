@@ -13,7 +13,30 @@ export interface AuthState {
   isOwner: boolean;
 }
 
-async function verifyInitData(initData: string): Promise<{
+const DEFAULT_INIT_DATA_MAX_AGE_SECONDS = 24 * 60 * 60;
+const MAX_INIT_DATA_FUTURE_SKEW_SECONDS = 60;
+
+function constantTimeEqual(left: Uint8Array, right: Uint8Array): boolean {
+  if (left.length !== right.length) return false;
+
+  let difference = 0;
+  for (let i = 0; i < left.length; i++) {
+    difference |= left[i] ^ right[i];
+  }
+  return difference === 0;
+}
+
+function decodeHex(value: string): Uint8Array | null {
+  if (!/^[0-9a-f]{64}$/i.test(value)) return null;
+
+  const bytes = new Uint8Array(value.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(value.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+export async function verifyInitData(initData: string): Promise<{
   valid: boolean;
   userId?: number;
   userName?: string;
@@ -71,8 +94,29 @@ async function verifyInitData(initData: string): Promise<{
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-  if (computedHash !== hash) {
+  const expectedHash = decodeHex(hash);
+  const actualHash = decodeHex(computedHash);
+  if (!expectedHash || !actualHash || !constantTimeEqual(actualHash, expectedHash)) {
     return { valid: false, error: "Invalid hash" };
+  }
+
+  const authDate = Number(params.get("auth_date"));
+  if (!Number.isInteger(authDate) || authDate <= 0) {
+    return { valid: false, error: "Invalid auth date" };
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const configuredMaxAge = Number(
+    Deno.env.get("TELEGRAM_INIT_DATA_MAX_AGE_SECONDS"),
+  );
+  const maxAge = Number.isFinite(configuredMaxAge) && configuredMaxAge > 0
+    ? configuredMaxAge
+    : DEFAULT_INIT_DATA_MAX_AGE_SECONDS;
+  if (
+    authDate > now + MAX_INIT_DATA_FUTURE_SKEW_SECONDS ||
+    now - authDate > maxAge
+  ) {
+    return { valid: false, error: "Expired auth data" };
   }
 
   // Extract user info
@@ -83,6 +127,9 @@ async function verifyInitData(initData: string): Promise<{
 
   try {
     const user = JSON.parse(userParam);
+    if (!Number.isSafeInteger(user.id) || user.id <= 0) {
+      return { valid: false, error: "Invalid user data" };
+    }
     return { valid: true, userId: user.id, userName: user.first_name };
   } catch {
     return { valid: false, error: "Invalid user data" };

@@ -55,6 +55,8 @@ export interface Booking {
   recurringId?: string;
   createdAt: string; // ISO
   decidedAt?: string; // ISO
+  decidedBy?: number; // Admin Telegram ID for an admin decision
+  decidedByName?: string; // Snapshot for audit visibility if the admin is renamed/removed
   inviteToken?: string; // For squad invitations
   participantIds?: number[]; // Array of user IDs who joined
 }

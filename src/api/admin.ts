@@ -17,7 +17,7 @@ import {
   upsertSettings,
   upsertUser,
 } from "../kv.ts";
-import type { Admin } from "../models.ts";
+import type { Admin, Settings } from "../models.ts";
 import { bot } from "../bot/client.ts";
 import {
   cancelBooking,
@@ -97,15 +97,8 @@ api.post("/admin/bookings/:id/confirm", async (c: any) => {
     return c.json({ error: result.error }, 400);
   }
 
-  // Notify user
-  try {
-    const booking = await import("../kv.ts").then((m) => m.getBooking(id));
-    const { notifyUserConfirmation } = await import("../bot/handlers.ts");
-    await notifyUserConfirmation(booking!);
-  } catch (e) {
-    console.error("Failed to notify user:", e);
-  }
-
+  // The decision is visible in the user's request history, including the acting
+  // admin. Do not send a misleading standalone "confirmed" DM here.
   return c.json({ success: true });
 });
 
@@ -205,7 +198,32 @@ api.get("/admin/settings", async (c: any) => {
 
 // PUT /api/admin/settings
 api.put("/admin/settings", async (c: any) => {
-  const settings = await c.req.json();
+  const raw = await c.req.json();
+  const settings: Settings = {
+    openTime: String(raw.openTime ?? ""),
+    closeTime: String(raw.closeTime ?? ""),
+    horizonDays: Number(raw.horizonDays),
+    minDurMin: Number(raw.minDurMin),
+    maxDurMin: Number(raw.maxDurMin),
+    snapMin: Number(raw.snapMin),
+  };
+
+  const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+  const openMin = timePattern.test(settings.openTime)
+    ? Number(settings.openTime.slice(0, 2)) * 60 + Number(settings.openTime.slice(3))
+    : -1;
+  const closeMin = timePattern.test(settings.closeTime)
+    ? Number(settings.closeTime.slice(0, 2)) * 60 + Number(settings.closeTime.slice(3))
+    : -1;
+  const validSnap = Number.isInteger(settings.snapMin) && settings.snapMin > 0 && settings.snapMin <= 240;
+  const validDuration = Number.isInteger(settings.minDurMin) && settings.minDurMin > 0 &&
+    Number.isInteger(settings.maxDurMin) && settings.maxDurMin >= settings.minDurMin;
+  const validHorizon = Number.isInteger(settings.horizonDays) && settings.horizonDays > 0 && settings.horizonDays <= 90;
+
+  if (openMin < 0 || closeMin <= openMin || !validSnap || !validDuration || !validHorizon) {
+    return c.json({ error: "Sozlamalar noto'g'ri: vaqt, davomiylik, qadam yoki gorizontni tekshiring" }, 400);
+  }
+
   await upsertSettings(settings);
   return c.json({ success: true });
 });

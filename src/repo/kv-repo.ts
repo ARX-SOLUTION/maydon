@@ -82,12 +82,16 @@ export class KvRepo implements Repo {
     return getBooking(id);
   }
   async createBooking(booking: Booking): Promise<void> {
-    // Same index-key set as services/booking.ts createBooking.
     const atomic = kv
       .atomic()
       .set(keys.booking(booking.id), booking)
-      .set(keys.bookingByDay(booking.date, booking.id), booking.id)
-      .set(keys.pendingByCreated(booking.createdAt, booking.id), booking.id);
+      .set(keys.bookingByDay(booking.date, booking.id), booking.id);
+    if (booking.status === "pending") {
+      atomic.set(keys.pendingByCreated(booking.createdAt, booking.id), booking.id);
+    }
+    if (booking.inviteToken) {
+      atomic.set(keys.inviteToken(booking.inviteToken), booking.id);
+    }
     if (booking.userId != null) {
       atomic.set(keys.bookingByUser(booking.userId, booking.id), booking.id);
     }
@@ -95,7 +99,20 @@ export class KvRepo implements Repo {
     if (!ok.ok) throw new Error("Failed to create booking");
   }
   async updateBooking(booking: Booking): Promise<void> {
-    await kv.set(keys.booking(booking.id), booking);
+    const current = await kv.get<Booking>(keys.booking(booking.id));
+    if (!current.value) throw new Error("Booking not found");
+    const atomic = kv.atomic().check(current).set(keys.booking(booking.id), booking);
+    if (current.value.status === "pending" && booking.status !== "pending") {
+      atomic.delete(keys.pendingByCreated(current.value.createdAt, booking.id));
+    }
+    if (booking.status === "pending") {
+      atomic.set(keys.pendingByCreated(booking.createdAt, booking.id), booking.id);
+    }
+    if (booking.inviteToken && booking.inviteToken !== current.value.inviteToken) {
+      atomic.set(keys.inviteToken(booking.inviteToken), booking.id);
+    }
+    const ok = await atomic.commit();
+    if (!ok.ok) throw new Error("Booking changed concurrently");
   }
   bookingsByDay(date: string): Promise<Booking[]> {
     return getBookingsByDay(date);

@@ -3,9 +3,26 @@
  */
 
 import { ulid } from "ulid";
-import { createBooking } from "./booking.ts";
-import { getAllRecurring, getRecurring, keys, kv } from "../kv.ts";
+import {
+  addCalendarDays,
+  calendarDayOfWeek,
+  createBooking,
+  tashkentDate,
+  validateSettings,
+  validateSlot,
+} from "./booking.ts";
+import {
+  getAllRecurring,
+  getBookingsByDay,
+  getRecurring,
+  getSettings,
+  keys,
+  kv,
+} from "../kv.ts";
 import type { Booking, Recurring } from "../models.ts";
+
+const recurringGenerationKey = (recurringId: string, date: string) =>
+  ["recurring_generated", recurringId, date] as const;
 
 export async function createRecurring(
   dayOfWeek: number,
@@ -14,6 +31,17 @@ export async function createRecurring(
   clientName: string,
   phone: string,
 ): Promise<{ success: boolean; recurring?: Recurring; error?: string }> {
+  const settings = await getSettings();
+  if (!settings) return { success: false, error: "Sozlamalar topilmadi" };
+  if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {
+    return { success: false, error: "Hafta kuni noto'g'ri" };
+  }
+  const settingsError = validateSettings(settings);
+  if (settingsError) return { success: false, error: settingsError };
+  const validationDate = tashkentDate();
+  const slotError = validateSlot(validationDate, startTime, endTime, settings);
+  if (slotError) return { success: false, error: slotError };
+
   const id = ulid();
 
   const recurring: Recurring = {
@@ -62,22 +90,16 @@ export async function setRecurringActive(
 
 export async function generateRecurringBookings(): Promise<void> {
   const recurringList = await getAllRecurring();
-  const settings = await kv.get(["settings"]);
+  const settings = await getSettings();
 
-  if (!settings.value) return;
+  if (!settings || validateSettings(settings)) return;
 
-  const tzOffset = 5 * 60 * 60 * 1000; // UTC+5
-  const today = new Date();
-  const localToday = new Date(today.getTime() + tzOffset);
-  localToday.setHours(0, 0, 0, 0);
+  const localToday = tashkentDate();
 
   // Generate for next 7 days
   for (let i = 0; i < 7; i++) {
-    const date = new Date(localToday);
-    date.setDate(date.getDate() + i);
-
-    const dayOfWeek = date.getDay();
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = addCalendarDays(localToday, i);
+    const dayOfWeek = calendarDayOfWeek(dateStr);
 
     // Find matching recurring bookings
     const matching = recurringList.filter(
@@ -86,21 +108,11 @@ export async function generateRecurringBookings(): Promise<void> {
 
     for (const rec of matching) {
       // Check if booking already exists for this date
-      const dayBookings = await kv.list<string>({
-        prefix: ["bookings_by_day", dateStr],
-      });
-
-      let exists = false;
-      for await (const entry of dayBookings) {
-        const booking = await kv.get<Booking>(keys.booking(entry.value));
-        if (
-          booking.value?.recurringId === rec.id &&
-          booking.value.status !== "cancelled"
-        ) {
-          exists = true;
-          break;
-        }
-      }
+      const dayBookings = await getBookingsByDay(dateStr);
+      const exists = dayBookings.some(
+        (booking: Booking) =>
+          booking.recurringId === rec.id && booking.status !== "cancelled",
+      );
 
       if (!exists) {
         await createBooking(
@@ -112,6 +124,8 @@ export async function generateRecurringBookings(): Promise<void> {
           rec.endTime,
           "recurring",
           rec.id,
+          `rec-${rec.id}-${dateStr}`,
+          recurringGenerationKey(rec.id, dateStr),
         );
       }
     }
