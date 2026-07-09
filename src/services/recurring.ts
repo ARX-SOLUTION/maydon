@@ -4,7 +4,7 @@
 
 import { ulid } from "ulid";
 import { createBooking } from "./booking.ts";
-import { getAllRecurring, keys, kv } from "../kv.ts";
+import { getAllRecurring, getRecurring, keys, kv } from "../kv.ts";
 import type { Booking, Recurring } from "../models.ts";
 
 export async function createRecurring(
@@ -46,9 +46,23 @@ export async function deleteRecurring(
   }
 }
 
+export async function setRecurringActive(
+  id: string,
+  active: boolean,
+): Promise<{ success: boolean; recurring?: Recurring; error?: string }> {
+  const recurring = await getRecurring(id);
+  if (!recurring) {
+    return { success: false, error: "Recurring booking not found" };
+  }
+
+  const updated = { ...recurring, active };
+  await kv.set(keys.recurring(id), updated);
+  return { success: true, recurring: updated };
+}
+
 export async function generateRecurringBookings(): Promise<void> {
   const recurringList = await getAllRecurring();
-  const settings = await kv.get<string[]>(["settings"]);
+  const settings = await kv.get(["settings"]);
 
   if (!settings.value) return;
 

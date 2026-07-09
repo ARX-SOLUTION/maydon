@@ -111,9 +111,14 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID") && publicUrl) {
   const webhookUrl = `${publicUrl.replace(/\/$/, "")}/webhook`;
   (async () => {
     try {
-      // Delete first for a clean slate, then set. No drop_pending_updates on either
-      // call, so updates queued during a cold start are not lost.
-      await bot.api.deleteWebhook();
+      // Only (re)register when the webhook is actually wrong. setWebhook is heavily
+      // rate-limited (429), and Deno Deploy cold-starts often — calling it every boot
+      // spams Telegram. getWebhookInfo is a cheap read; if the URL already matches we
+      // do nothing. This still self-heals if the URL is ever changed/cleared.
+      // NB: no deleteWebhook first — setWebhook replaces atomically, whereas
+      // delete-then-set leaves the webhook EMPTY (bot dead) if the set then 429s.
+      const info = await bot.api.getWebhookInfo();
+      if (info.url === webhookUrl) return;
       await bot.api.setWebhook(webhookUrl, {
         secret_token: webhookSecret,
         allowed_updates: ["message", "callback_query"],
