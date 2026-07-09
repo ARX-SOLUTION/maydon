@@ -18,17 +18,24 @@ export async function expirePending(): Promise<void> {
 
   for await (const entry of pending) {
     const booking = await kv.get<Booking>(keys.booking(entry.value));
-    if (!booking.value || booking.value.status !== "pending") continue;
+    if (!booking.value || booking.value.status !== "pending") {
+      await kv.delete(entry.key);
+      continue;
+    }
 
     const b = booking.value;
     const startDateTime = new Date(`${b.date}T${b.start}:00+05:00`);
 
     if (startDateTime < localNow) {
-      await kv.set(keys.booking(b.id), {
-        ...b,
-        status: "expired",
-        decidedAt: new Date().toISOString(),
-      });
+      await kv.atomic()
+        .check(booking)
+        .set(keys.booking(b.id), {
+          ...b,
+          status: "expired",
+          decidedAt: new Date().toISOString(),
+        })
+        .delete(keys.pendingByCreated(b.createdAt, b.id))
+        .commit();
       // TODO: Send notification to user
     }
   }

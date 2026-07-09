@@ -198,6 +198,7 @@ export async function confirmBooking(
         decidedAt: new Date().toISOString(),
       })
       .set(keys.dayVersion(date), (dayVer.value ?? 0) + 1)
+      .delete(keys.pendingByCreated(b.createdAt, id))
       .commit();
 
     if (ok.ok) {
@@ -235,11 +236,15 @@ export async function rejectBooking(id: string): Promise<void> {
   if (!booking.value) return;
 
   const b = booking.value;
-  await kv.set(keys.booking(id), {
-    ...b,
-    status: "rejected",
-    decidedAt: new Date().toISOString(),
-  });
+  await kv.atomic()
+    .check(booking)
+    .set(keys.booking(id), {
+      ...b,
+      status: "rejected",
+      decidedAt: new Date().toISOString(),
+    })
+    .delete(keys.pendingByCreated(b.createdAt, id))
+    .commit();
 }
 
 export async function cancelBooking(

@@ -54,19 +54,22 @@ Plan, manage, and complete the implementation of the booking cancellation/no-sho
 | worker_m1_e2e | teamwork_preview_worker | Write TDD tests in cancellation_test.ts | completed | 46cdb294-44fa-4512-9c80-74ff5dc9fabf |
 | worker_m2_backend | teamwork_preview_worker | Implement backend cancellation service, API & bot notifications | completed | e7934c41-beea-4a02-982c-750f36afe93a |
 | worker_m3_ui | teamwork_preview_worker | Add cancellation button and script in Schedule UI | completed | 0f6d7f1f-e796-4840-8c05-b279fdbc0cd2 |
-| reviewer_final | teamwork_preview_reviewer | Review final implementation against Spec & Standards | in-progress | 205821ec-c43d-4a20-82c4-519162c93a8a |
-| auditor_final | teamwork_preview_auditor | Perform forensic integrity audit on the changes | in-progress | 319277dd-7fa0-4f43-87be-fa82b06deaed |
+| reviewer_final | teamwork_preview_reviewer | Review final implementation against Spec & Standards | completed | 205821ec-c43d-4a20-82c4-519162c93a8a |
+| auditor_final | teamwork_preview_auditor | Perform forensic integrity audit on the changes | completed | 319277dd-7fa0-4f43-87be-fa82b06deaed |
+| worker_fixes | teamwork_preview_worker | Fix code review bugs (Users blank tab, test network calls, KV index leak) | completed | 3d07f154-7b08-4367-9278-c5a33f9f7006 |
+| reviewer_post_fixes | teamwork_preview_reviewer | Verify post-fix codebase against Spec & Standards | in-progress | 1576877e-b3c5-453d-af82-5286d5255b46 |
+| auditor_post_fixes | teamwork_preview_auditor | Perform final forensic integrity audit on all changes | in-progress | a4aadf13-c274-4f05-9cd9-0e3a505c4afe |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 6 / 16
-- Pending subagents: 205821ec-c43d-4a20-82c4-519162c93a8a, 319277dd-7fa0-4f43-87be-fa82b06deaed
+- Spawn count: 9 / 16
+- Pending subagents: 1576877e-b3c5-453d-af82-5286d5255b46, a4aadf13-c274-4f05-9cd9-0e3a505c4afe
 - Predecessor: none
 - Successor: not yet spawned
 
 ## Active Timers
 - Heartbeat cron: d018181c-a215-42cf-9efc-d0e17ec0b00b/task-29
-- Safety timer: none
+- Safety timer: d018181c-a215-42cf-9efc-d0e17ec0b00b/task-161
 
 ## Artifact Index
 - /Users/admin/Developer/Projects/maydon/.agents/orchestrator/ORIGINAL_REQUEST.md — Original user request

@@ -113,7 +113,11 @@ window.toggleBlock = async function(id, btn) {
   }
 };
 
-document.addEventListener("DOMContentLoaded", loadUsers);
+if (document.readyState === "complete" || document.readyState === "interactive") {
+  loadUsers();
+} else {
+  document.addEventListener("DOMContentLoaded", loadUsers);
+}
 `;
 
 export const AdminUsers: FC = () => {

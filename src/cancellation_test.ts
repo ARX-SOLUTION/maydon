@@ -1,5 +1,12 @@
 Deno.env.set("KV_PATH", `maydon_test_${Date.now()}`);
 Deno.env.set("TELEGRAM_BOT_TOKEN", "test-token-for-auth-spec");
+import { bot } from "./bot/client.ts";
+
+// Stub Telegram API calls to prevent network leaks and speed up tests
+bot.api.sendMessage = () => Promise.resolve({} as any);
+bot.api.setMyCommands = () => Promise.resolve(true);
+bot.api.getMe = () => Promise.resolve({ id: 12345, first_name: "TestBot", username: "test_bot", is_bot: true } as any);
+bot.api.editMessageText = () => Promise.resolve({} as any);
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import type { Booking } from "./models.ts";
@@ -423,4 +430,103 @@ Deno.test("Tier 4.1: Interactive admin UI scenario: schedule page includes cance
   assertEquals(resGet2.status, 200);
   const html2 = await resGet2.text();
   assertEquals(html2.includes(`cancelAdminBooking(&#39;${bookingId}&#39;, &#39;2026-07-15&#39;)`), false);
+});
+
+Deno.test("Tier 4.2: KV Index Leak prevention: confirm, reject, and expirePending clean up pending_by_created index", async () => {
+  await clearKv();
+  await initDefaultSettings();
+  const userId = 99999;
+  await upsertUser({
+    telegramId: userId,
+    name: "Client",
+    isActive: true,
+    isBlocked: false,
+    createdAt: new Date().toISOString()
+  });
+  const createResult = await createBooking(
+    userId,
+    "Client",
+    "+998901234567",
+    "2026-07-15",
+    "12:00",
+    "13:00",
+    "user"
+  );
+  assertExists(createResult.booking);
+  const b = createResult.booking;
+  const pendingKey = keys.pendingByCreated(b.createdAt, b.id);
+
+  // Verify pending index exists
+  let indexEntry = await kv.get(pendingKey);
+  assertExists(indexEntry.value);
+
+  // Confirm booking
+  const confirmResult = await confirmBooking(b.id);
+  assertEquals(confirmResult.success, true);
+
+  // Verify pending index is deleted
+  indexEntry = await kv.get(pendingKey);
+  assertEquals(indexEntry.value, null);
+
+  // Re-create booking to test rejection
+  const createResult2 = await createBooking(
+    99999,
+    "Client 2",
+    "+998901234567",
+    "2026-07-15",
+    "14:00",
+    "15:00",
+    "user"
+  );
+  const b2 = createResult2.booking!;
+  const pendingKey2 = keys.pendingByCreated(b2.createdAt, b2.id);
+
+  // Verify pending index exists
+  indexEntry = await kv.get(pendingKey2);
+  assertExists(indexEntry.value);
+
+  // Reject booking using our refactored rejectBooking
+  const { rejectBooking } = await import("./services/booking.ts");
+  await rejectBooking(b2.id);
+
+  // Verify pending index is deleted
+  indexEntry = await kv.get(pendingKey2);
+  assertEquals(indexEntry.value, null);
+
+  // Re-create to test cron expirePending
+  const createResult3 = await createBooking(
+    99999,
+    "Client 3",
+    "+998901234567",
+    "2026-07-15",
+    "15:00",
+    "16:00",
+    "user"
+  );
+  const b3 = createResult3.booking!;
+  const pendingKey3 = keys.pendingByCreated(b3.createdAt, b3.id);
+
+  // Manually update booking date/time to be in the past to trigger expiry
+  await kv.set(keys.booking(b3.id), {
+    ...b3,
+    date: "2020-01-01",
+  });
+
+  const { expirePending } = await import("./cron.ts");
+  await expirePending();
+
+  // Verify pending index is deleted
+  indexEntry = await kv.get(pendingKey3);
+  assertEquals(indexEntry.value, null);
+
+  // Verify orphaned index cleanup: manually insert an entry with no corresponding booking, or non-pending booking
+  const orphanedKey = keys.pendingByCreated(new Date().toISOString(), "orphaned-id");
+  await kv.set(orphanedKey, "orphaned-id");
+
+  // Run expirePending again
+  await expirePending();
+
+  // Verify orphaned index is deleted
+  indexEntry = await kv.get(orphanedKey);
+  assertEquals(indexEntry.value, null);
 });
