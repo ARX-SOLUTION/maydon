@@ -44,6 +44,7 @@ export const keys = {
     ["pending_by_created", createdAt, id] as const,
   dayVersion: (date: string) => ["day_version", date] as const,
   recurring: (id: string) => ["recurring", id] as const,
+  inviteToken: (token: string) => ["invite_tokens", token] as const,
 };
 
 // ========== CRUD Helpers ==========
