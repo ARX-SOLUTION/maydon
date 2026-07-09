@@ -85,6 +85,7 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
             hx-target="#app-content"
             hx-push-url="true"
             aria-label="Boshqaruv paneli"
+            onclick="localStorage.setItem('maydon_role_override', 'admin')"
             class="hidden min-w-[44px] min-h-[44px] rounded-full bg-crm-primarySoft text-crm-primary items-center justify-center tap-scale focus-ring"
           >
             <Icon name="settings" class="w-5 h-5" />
@@ -93,20 +94,33 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
       />
       <script>
         {raw(`
-        (async function revealAdminLink() {
+        (function revealAdminLink() {
           var link = document.getElementById('adminPanelLink');
           if (!link) return;
-          try {
-            var initData = window.Telegram?.WebApp?.initData || '';
-            var res = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + initData } });
-            var data = await res.json();
-            if (res.ok && data.isAdmin) {
-              link.classList.remove('hidden');
-              link.classList.add('flex');
-            }
-          } catch (e) {
-            // silent — this is just a discoverability link, not a security boundary
+          
+          // Synchronous fast-path
+          if (localStorage.getItem('maydon_is_admin') === 'true') {
+            link.classList.remove('hidden');
+            link.classList.add('flex');
           }
+          
+          // Background sync to update cache
+          var initData = window.Telegram?.WebApp?.initData || '';
+          fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + initData } })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              localStorage.setItem('maydon_is_admin', data.isAdmin ? 'true' : 'false');
+              if (data.isOwner) localStorage.setItem('maydon_is_owner', 'true');
+              else localStorage.removeItem('maydon_is_owner');
+              
+              if (data.isAdmin) {
+                link.classList.remove('hidden');
+                link.classList.add('flex');
+              } else {
+                link.classList.add('hidden');
+                link.classList.remove('flex');
+              }
+            }).catch(function(){});
         })();
       `)}
       </script>

@@ -60,6 +60,19 @@ export const AdminRequests: FC = async () => {
       <PageHeader
         title="So'rovlar"
         subtitle="Kutilayotgan bron so'rovlari (FIFO)"
+        rightNode={
+          <button
+            id="userPanelLink"
+            hx-get="/app/user/week"
+            hx-target="#app-content"
+            hx-push-url="true"
+            aria-label="Foydalanuvchi rejimi"
+            onclick="localStorage.setItem('maydon_role_override', 'user')"
+            class="min-w-[44px] min-h-[44px] rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center tap-scale focus-ring"
+          >
+            <Icon name="profile" class="w-5 h-5" />
+          </button>
+        }
       />
 
       <div class="px-5 space-y-4">

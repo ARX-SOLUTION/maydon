@@ -122,9 +122,21 @@ api.post("/admin/bookings/:id/reject", async (c: any) => {
 // POST /api/admin/bookings/:id/cancel
 api.post("/admin/bookings/:id/cancel", async (c: any) => {
   const id = c.req.param("id");
-  await cancelBooking(id);
+  const result = await cancelBooking(id);
 
-  // TODO: Notify admins about available slot
+  if (!result.success) {
+    return c.json({ error: result.error }, 400);
+  }
+
+  // Notify user
+  if (result.booking) {
+    try {
+      const { notifyUserCancellation } = await import("../bot/handlers.ts");
+      await notifyUserCancellation(result.booking);
+    } catch (e) {
+      console.error("Failed to notify user about cancellation:", e);
+    }
+  }
 
   return c.json({ success: true });
 });

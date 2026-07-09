@@ -136,7 +136,12 @@ export async function notifyUserCancelled(
   userId: number,
   booking: Booking,
 ): Promise<void> {
-  // Stub: Not implemented yet (TDD Red Phase)
-  throw new Error("notifyUserCancelled not implemented yet");
+  const text =
+    `⚠️ **Broningiz bekor qilindi**\n\n` +
+    `📅 ${booking.date}\n` +
+    `⏰ ${booking.start} - ${booking.end}\n\n` +
+    `Ushbu o'yin vaqti admin tomonidan bekor qilindi.`;
+
+  await bot.sendMessage(userId, text, { parse_mode: "Markdown" });
 }
 

@@ -113,20 +113,31 @@ export const RoleBottomNav: FC<{ role: Role; activeId: string }> = (
     {role === "admin" && (
       <script>
         {raw(`
-        (async function revealAdminsNav() {
+        (function revealAdminsNav() {
           var el = document.getElementById('navAdmins');
           if (!el) return;
-          try {
-            var initData = window.Telegram?.WebApp?.initData || '';
-            var res = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + initData } });
-            var data = await res.json();
-            if (res.ok && data.isOwner) {
-              el.classList.remove('hidden');
-              el.classList.add('flex');
-            }
-          } catch (e) {
-            // silent — discoverability link, not a security boundary
+          
+          // Synchronous fast-path
+          if (localStorage.getItem('maydon_is_owner') === 'true') {
+            el.classList.remove('hidden');
+            el.classList.add('flex');
           }
+          
+          // Background sync
+          var initData = window.Telegram?.WebApp?.initData || '';
+          fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + initData } })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              if (data.isOwner) {
+                localStorage.setItem('maydon_is_owner', 'true');
+                el.classList.remove('hidden');
+                el.classList.add('flex');
+              } else {
+                localStorage.removeItem('maydon_is_owner');
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+              }
+            }).catch(function(){});
         })();
       `)}
       </script>

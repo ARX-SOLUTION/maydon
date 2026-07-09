@@ -52,18 +52,21 @@ Plan, manage, and complete the implementation of the booking cancellation/no-sho
 |-------|------|-----------|--------|---------|
 | explorer_1 | teamwork_preview_explorer | Explore codebase & propose cancellation design | completed | 586062a5-99ec-4d57-9ca8-dde5e27c8a46 |
 | worker_m1_e2e | teamwork_preview_worker | Write TDD tests in cancellation_test.ts | completed | 46cdb294-44fa-4512-9c80-74ff5dc9fabf |
-| worker_m2_backend | teamwork_preview_worker | Implement backend cancellation service, API & bot notifications | in-progress | e7934c41-beea-4a02-982c-750f36afe93a |
+| worker_m2_backend | teamwork_preview_worker | Implement backend cancellation service, API & bot notifications | completed | e7934c41-beea-4a02-982c-750f36afe93a |
+| worker_m3_ui | teamwork_preview_worker | Add cancellation button and script in Schedule UI | completed | 0f6d7f1f-e796-4840-8c05-b279fdbc0cd2 |
+| reviewer_final | teamwork_preview_reviewer | Review final implementation against Spec & Standards | in-progress | 205821ec-c43d-4a20-82c4-519162c93a8a |
+| auditor_final | teamwork_preview_auditor | Perform forensic integrity audit on the changes | in-progress | 319277dd-7fa0-4f43-87be-fa82b06deaed |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 3 / 16
-- Pending subagents: e7934c41-beea-4a02-982c-750f36afe93a
+- Spawn count: 6 / 16
+- Pending subagents: 205821ec-c43d-4a20-82c4-519162c93a8a, 319277dd-7fa0-4f43-87be-fa82b06deaed
 - Predecessor: none
 - Successor: not yet spawned
 
 ## Active Timers
 - Heartbeat cron: d018181c-a215-42cf-9efc-d0e17ec0b00b/task-29
-- Safety timer: d018181c-a215-42cf-9efc-d0e17ec0b00b/task-77
+- Safety timer: none
 
 ## Artifact Index
 - /Users/admin/Developer/Projects/maydon/.agents/orchestrator/ORIGINAL_REQUEST.md — Original user request

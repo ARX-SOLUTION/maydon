@@ -75,10 +75,12 @@ async function submitManualBooking(btn) {
     btn.innerHTML = oldLabel;
   }
 }
-}
 
-async function cancelAdminBooking(id, date) {
-  if (!confirm("Haqiqatan ham ushbu bronni bekor qilmoqchimisiz? (Mijoz kelmadi / No-show)")) return;
+async function handleCancel(id, btn, date) {
+  if (!confirm("Haqiqatan ham ushbu bronni bekor qilmoqchimisiz?")) return;
+  if (btn) btn.disabled = true;
+  var oldLabel = btn ? btn.innerHTML : '';
+  if (btn) btn.innerHTML = '<span class="inline-block w-3.5 h-3.5 rounded-full border-2 border-current/30 border-t-current animate-spin"></span>';
   try {
     var initData = window.Telegram?.WebApp?.initData || '';
     var res = await fetch('/api/admin/bookings/' + id + '/cancel', {
@@ -90,13 +92,28 @@ async function cancelAdminBooking(id, date) {
     var data = await res.json();
     if (res.ok && data.success) {
       window.toast("Bron bekor qilindi", 'success');
-      htmx.ajax('GET', '/app/admin/schedule?date=' + encodeURIComponent(date), '#app-content');
+      var dateStr = date || document.getElementById('manualDate')?.value || '';
+      htmx.ajax('GET', '/app/admin/schedule?date=' + encodeURIComponent(dateStr), '#app-content');
     } else {
       window.toast(data.error || 'Xatolik yuz berdi', 'error');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = oldLabel;
+      }
     }
   } catch (e) {
     window.toast('Xato: ' + e.message, 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = oldLabel;
+    }
   }
+}
+
+async function cancelAdminBooking(id, date) {
+  var btn = document.querySelector('button[onclick*="cancelAdminBooking(\'' + id + '\'")') || 
+            document.querySelector('button[onclick*="cancelAdminBooking(&#39;' + id + '&#39;")');
+  await handleCancel(id, btn, date);
 }
 `;
 
@@ -361,13 +378,12 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                                 </a>
                               )
                               : null}
-                            {booking?.id ? (
+                            {booking?.id && booking.status === "confirmed" ? (
                               <button
                                 onclick={`cancelAdminBooking('${booking.id}', '${targetDate}')`}
-                                class="w-8 h-8 flex items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 tap-scale focus-ring"
-                                aria-label="Bekor qilish"
+                                class="h-8 px-2.5 rounded-[10px] bg-crm-dangerSoft text-crm-danger font-bold text-[12px] tap-scale focus-ring flex items-center justify-center transition-colors hover:bg-crm-danger hover:text-white"
                               >
-                                <Icon name="xCircle" class="w-4 h-4" />
+                                Bekor qilish
                               </button>
                             ) : null}
                           </div>

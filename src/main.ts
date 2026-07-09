@@ -61,7 +61,68 @@ if (ownerId !== null) {
 app.use("/static/*", serveStatic({ root: "./" }));
 
 // UI and Web routes
-app.get("/", (c) => c.redirect("/app/user/week"));
+app.get("/", (c) => c.html(`
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Maydon Booking</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    (async function() {
+      // Check for user-chosen role override first
+      var userChosenRole = localStorage.getItem('maydon_role_override');
+      if (userChosenRole === 'user') {
+        window.location.replace('/app/user/week');
+        return;
+      } else if (userChosenRole === 'admin') {
+        window.location.replace('/app/admin/requests');
+        return;
+      }
+      
+      // Fast path: use cached API role if available to avoid jitter
+      var cachedAdmin = localStorage.getItem('maydon_is_admin');
+      if (cachedAdmin === 'true') {
+        window.location.replace('/app/admin/requests');
+        return;
+      } else if (cachedAdmin === 'false') {
+        window.location.replace('/app/user/week');
+        return;
+      }
+
+      // First load or cache cleared: verify with API
+      var initData = window.Telegram?.WebApp?.initData || '';
+      try {
+        var res = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + initData } });
+        var data = await res.json();
+        
+        // Cache the actual roles for future fast paths and synchronous UI revealing
+        localStorage.setItem('maydon_is_admin', data.isAdmin ? 'true' : 'false');
+        if (data.isOwner) localStorage.setItem('maydon_is_owner', 'true');
+        else localStorage.removeItem('maydon_is_owner');
+
+        if (data.isAdmin) {
+          window.location.replace('/app/admin/requests');
+        } else {
+          window.location.replace('/app/user/week');
+        }
+      } catch (e) {
+        window.location.replace('/app/user/week');
+      }
+    })();
+  </script>
+  <style>
+    body { background: #F8FAFC; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #E2E8F0; border-top-color: #2563EB; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+</body>
+</html>
+`));
 app.route("/app", uiRouter);
 
 // API routes

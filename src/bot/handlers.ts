@@ -23,4 +23,5 @@ export {
   notifyAdminsNewRequest,
   notifyUserConfirmation,
   notifyUserRejection,
+  notifyUserCancellation,
 } from "./decisions.ts";

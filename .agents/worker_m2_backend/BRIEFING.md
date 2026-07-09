@@ -1,4 +1,4 @@
-# BRIEFING — 2026-07-09T19:54:40Z
+# BRIEFING — 2026-07-09T19:55:00Z
 
 ## Mission
 Implement Milestone 2 backend cancellation logic, API endpoints, and Telegram notifications.
@@ -25,17 +25,22 @@ Implement Milestone 2 backend cancellation logic, API endpoints, and Telegram no
 - **Code layout**: Deno backend project.
 
 ## Key Decisions Made
-- None yet.
+- Exported `notifyUserCancellation` from `src/bot/handlers.ts` to allow it to be imported and called directly in `src/api/admin.ts`, keeping the Telegram bot concern centralized.
+- Performed atomic check via Deno KV on the booking key inside `cancelBooking` to ensure race condition safety during cancellation.
 
 ## Change Tracker
-- **Files modified**: None yet.
-- **Build status**: Untested.
+- **Files modified**:
+  - `src/services/booking.ts`: Implemented `cancelBooking` with state transition checks and optimistic locking.
+  - `src/services/notify.ts`: Implemented `notifyUserCancelled` using bot's sendMessage with Markdown formatting.
+  - `src/bot/handlers.ts`: Exported `notifyUserCancellation`.
+  - `src/api/admin.ts`: Integrated cancellation logic and user notifications in the `POST /api/admin/bookings/:id/cancel` route.
+- **Build status**: PASS
 - **Pending issues**: None.
 
 ## Quality Status
-- **Build/test result**: Untested.
-- **Lint status**: Untested.
-- **Tests added/modified**: None.
+- **Build/test result**: 20 tests passed, 0 failed.
+- **Lint status**: Pre-existing lint errors checked, no new warnings introduced.
+- **Tests added/modified**: Verified all tests in `src/cancellation_test.ts` pass.
 
 ## Loaded Skills
 - None.
