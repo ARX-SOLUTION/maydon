@@ -26,10 +26,18 @@ function nameError(name: string): string | null {
 }
 
 export function miniAppKeyboard(isAdmin = false): InlineKeyboard {
-  const base = Deno.env.get("MINI_APP_URL") ?? "https://maydon.uz";
-  const keyboard = new InlineKeyboard().url("📅 Band qilish", base);
+  // web_app buttons open the Mini App inside Telegram (not an external browser);
+  // available in private chats, which is where the bot DMs users.
+  const base = (Deno.env.get("MINI_APP_URL") ?? "https://maydon.uz").replace(
+    /\/$/,
+    "",
+  );
+  const keyboard = new InlineKeyboard().webApp(
+    "📅 Band qilish",
+    `${base}/app/user/week`,
+  );
   if (isAdmin) {
-    keyboard.row().url("🛠 Boshqaruv paneli", `${base}/app/admin/requests`);
+    keyboard.row().webApp("🛠 Boshqaruv paneli", `${base}/app/admin/requests`);
   }
   return keyboard;
 }
