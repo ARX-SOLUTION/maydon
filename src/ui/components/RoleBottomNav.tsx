@@ -28,7 +28,7 @@ export const RoleBottomNav: FC<{ role: Role; activeId: string }> = ({ role, acti
   const items = role === 'admin' ? adminNav : userNav;
 
   return (
-    <nav class="fixed bottom-0 left-0 right-0 bg-crm-surface/90 backdrop-blur-md border-t border-crm-borderSoft tma-safe-bottom z-50 rounded-t-[28px] shadow-[0_-4px_24px_rgba(15,23,42,0.04)]">
+    <nav class="fixed bottom-0 left-0 right-0 mx-auto max-w-[480px] bg-crm-surface/95 backdrop-blur-md border-t border-crm-borderSoft pb-[env(safe-area-inset-bottom)] z-50 rounded-t-[28px] shadow-[0_-4px_24px_rgba(15,23,42,0.06)]">
       <div class="flex justify-around items-center h-16 px-2">
         {items.map(item => {
           const isActive = item.id === activeId;

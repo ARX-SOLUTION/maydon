@@ -71,9 +71,6 @@ p { text-wrap: pretty; }
 .tma-safe-top {
   padding-top: max(16px, env(safe-area-inset-top));
 }
-.tma-safe-bottom {
-  padding-bottom: max(96px, env(safe-area-inset-bottom));
-}
 .gsap-stagger {
   visibility: hidden;
 }

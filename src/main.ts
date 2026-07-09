@@ -3,6 +3,7 @@
  */
 
 import { Hono } from "hono";
+import { webhookCallback } from "grammy";
 import adminApi from "./api/admin.ts";
 import userApi from "./api/user.ts";
 import { uiRouter } from "./ui/router.tsx";
@@ -11,6 +12,20 @@ import { registerCronJobs } from "./cron.ts";
 import { addAdmin, initDefaultSettings } from "./kv.ts";
 
 const app = new Hono();
+
+// Stable webhook secret derived from the bot token — lets us verify that webhook
+// POSTs actually come from Telegram (the callback_query handler trusts from.id for
+// admin actions, so forged updates could otherwise impersonate an admin). No extra config.
+const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
+const webhookSecret = await (async () => {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode("maydon-webhook:" + botToken),
+  );
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+})();
 
 // Initialize settings on startup
 await initDefaultSettings();
@@ -33,15 +48,30 @@ app.route("/app", uiRouter);
 app.route("/api", userApi);
 app.route("/api", adminApi);
 
-// Webhook endpoint for Telegram bot
-app.post("/webhook", async (c: any) => {
+// Webhook endpoint for Telegram bot.
+// Uses grammY's Hono adapter (handles bot.init() internally — bot.handleUpdate()
+// throws "Bot not initialized!" if called directly) and verifies the secret token.
+app.post("/webhook", webhookCallback(bot, "hono", { secretToken: webhookSecret }));
+
+// One-time webhook registration. Visit /webhook/setup?secret=<TELEGRAM_BOT_TOKEN>
+// once after deploy. The URL is derived from the request host, so this can only ever
+// point Telegram back at this same deployment.
+app.get("/webhook/setup", async (c: any) => {
+  if (c.req.query("secret") !== botToken) {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+  const host = c.req.header("host");
+  if (!host) return c.json({ error: "No host header" }, 400);
+  const url = `https://${host}/webhook`;
   try {
-    const update = await c.req.json();
-    await bot.handleUpdate(update);
-    return c.text("OK");
+    const ok = await bot.api.setWebhook(url, {
+      secret_token: webhookSecret,
+      allowed_updates: ["message", "callback_query"],
+      drop_pending_updates: true,
+    });
+    return c.json({ ok, webhook: url });
   } catch (error: any) {
-    console.error("Webhook error:", error);
-    return c.text("Error", 500);
+    return c.json({ error: error.message }, 500);
   }
 });
 
