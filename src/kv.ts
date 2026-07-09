@@ -6,11 +6,27 @@ import type { Admin, Booking, Recurring, Settings, User } from "./models.ts";
 
 const KV_PATH = Deno.env.get("KV_PATH") ?? "maydon_kv";
 
-// Named openKv() on Deno Deploy requires a dashboard-provisioned KV db and 404s otherwise; fall back to the zero-config default.
-export const kv = await Deno.openKv(KV_PATH).catch((e) => {
-  console.error(`openKv("${KV_PATH}") failed, falling back to the default KV:`, e);
-  return Deno.openKv();
-});
+// Named openKv() on Deno Deploy requires a dashboard-provisioned KV db. openKv()
+// itself resolves lazily and never rejects for a bad name — the "metadata NOT_FOUND"
+// error only surfaces on the first real operation. So we can't just .catch() the
+// open call; we have to probe with an actual read and fall back if THAT fails.
+async function openHealthyKv(path: string): Promise<Deno.Kv> {
+  const candidate = await Deno.openKv(path);
+  try {
+    await candidate.get(["__kv_healthcheck__"]);
+    return candidate;
+  } catch (e) {
+    console.error(`openKv("${path}") failed on first use, falling back to the default KV:`, e);
+    try {
+      candidate.close();
+    } catch {
+      // ignore — best-effort cleanup of the unusable handle
+    }
+    return await Deno.openKv();
+  }
+}
+
+export const kv = await openHealthyKv(KV_PATH);
 
 // ========== Key Builders ==========
 

@@ -4,7 +4,7 @@
   "tasks": {
     "dev": "deno serve --env --unstable-kv --unstable-cron --allow-all --watch src/main.ts",
     "deploy": "deployctl deploy --project=maydon-booking src/main.ts",
-    "test": "deno test --allow-all"
+    "test": "deno test --unstable-kv --unstable-cron --allow-all"
   },
   "imports": {
     "hono": "jsr:@hono/hono@^4",
