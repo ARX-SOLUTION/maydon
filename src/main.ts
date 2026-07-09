@@ -66,7 +66,18 @@ app.route("/api", adminApi);
 // Webhook endpoint for Telegram bot.
 // Uses grammY's Hono adapter (handles bot.init() internally — bot.handleUpdate()
 // throws "Bot not initialized!" if called directly) and verifies the secret token.
-app.post("/webhook", webhookCallback(bot, "hono", { secretToken: webhookSecret }));
+// A throwing update must be ACKNOWLEDGED with 200, not 500 — grammY propagates
+// handler errors to the framework (not bot.catch), and a 500 makes Telegram retry
+// the same update forever, blocking the whole in-order webhook queue (bot goes dead).
+const handleWebhook = webhookCallback(bot, "hono", { secretToken: webhookSecret });
+app.post("/webhook", async (c: any) => {
+  try {
+    return await handleWebhook(c);
+  } catch (err) {
+    console.error("Webhook handler error (acknowledged to avoid retry storm):", err);
+    return c.text("OK");
+  }
+});
 
 // One-time webhook registration. Visit /webhook/setup?secret=<TELEGRAM_BOT_TOKEN>
 // once after deploy. The URL is derived from the request host, so this can only ever
