@@ -278,6 +278,8 @@ export async function createBooking(
   const id = ulid();
   const createdAt = new Date().toISOString();
 
+  const token = ulid();
+
   const booking: Booking = {
     id,
     userId,
@@ -290,6 +292,8 @@ export async function createBooking(
     source,
     recurringId,
     createdAt,
+    inviteToken: token,
+    participantIds: [],
   };
 
   // Atomic write with indexes
@@ -297,7 +301,8 @@ export async function createBooking(
     .atomic()
     .set(keys.booking(id), booking)
     .set(keys.bookingByDay(date, id), id)
-    .set(keys.pendingByCreated(createdAt, id), id);
+    .set(keys.pendingByCreated(createdAt, id), id)
+    .set(keys.inviteToken(token), id);
   if (userId != null) {
     atomic.set(keys.bookingByUser(userId, id), id);
   }
@@ -308,4 +313,49 @@ export async function createBooking(
   }
 
   return { success: true, booking };
+}
+
+// ========== Squad Invitations ==========
+
+export async function joinBooking(
+  token: string,
+  userId: number,
+): Promise<{ success: boolean; error?: string }> {
+  // 1. Get the booking ID from the token
+  const idEntry = await kv.get<string>(keys.inviteToken(token));
+  if (!idEntry.value) {
+    return { success: false, error: "Taklifnoma topilmadi" };
+  }
+  const bookingId = idEntry.value;
+
+  // 2. Get the booking
+  const bookingEntry = await kv.get<Booking>(keys.booking(bookingId));
+  if (!bookingEntry.value) {
+    return { success: false, error: "O'yin topilmadi" };
+  }
+
+  const booking = bookingEntry.value;
+  if (booking.status !== "confirmed" && booking.status !== "pending") {
+    return { success: false, error: "Bu o'yin faol emas" };
+  }
+
+  const participants = booking.participantIds || [];
+  if (participants.includes(userId)) {
+    return { success: false, error: "Siz allaqachon qo'shilgansiz" };
+  }
+
+  // 3. Atomic append
+  // Since participants array can grow, we use atomic check to ensure no overwrites
+  const newParticipants = [...participants, userId];
+  
+  const ok = await kv.atomic()
+    .check(bookingEntry)
+    .set(keys.booking(bookingId), { ...booking, participantIds: newParticipants })
+    .commit();
+    
+  if (!ok.ok) {
+    return { success: false, error: "Xatolik yuz berdi, qayta urinib ko'ring" };
+  }
+
+  return { success: true };
 }

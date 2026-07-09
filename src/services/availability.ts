@@ -12,6 +12,9 @@ export interface TimeSlot {
   isBusy: boolean;
   bookingId?: string;
   bookedBy?: string;
+  userId?: number | null;
+  participantCount?: number;
+  inviteToken?: string;
 }
 
 export async function getDayAvailability(
@@ -53,6 +56,9 @@ export async function getDayAvailability(
       isBusy: !!overlappingBooking,
       bookingId: overlappingBooking?.id,
       bookedBy: overlappingBooking?.clientName ?? undefined,
+      userId: overlappingBooking?.userId,
+      participantCount: overlappingBooking?.participantIds?.length ?? 0,
+      inviteToken: overlappingBooking?.inviteToken,
     });
   }
 

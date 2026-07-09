@@ -155,4 +155,19 @@ api.post("/bookings/:id/cancel", async (c: any) => {
   return c.json({ success: true });
 });
 
+// POST /api/invite/:token/join — Join a squad
+api.post("/invite/:token/join", async (c: any) => {
+  const auth = c.get("auth");
+  const token = c.req.param("token");
+
+  const { joinBooking } = await import("../services/booking.ts");
+  const result = await joinBooking(token, auth.userId);
+
+  if (!result.success) {
+    return c.json({ error: result.error }, 400);
+  }
+
+  return c.json({ success: true });
+});
+
 export default api;

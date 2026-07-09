@@ -43,6 +43,9 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
       end: string;
       bookingId?: string;
       bookedBy?: string;
+      userId?: number | null;
+      participantCount?: number;
+      inviteToken?: string;
     };
   const segments: Segment[] = [];
   for (const slot of dayData.slots) {
@@ -63,6 +66,9 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
         end: slot.end,
         bookingId: slot.bookingId,
         bookedBy: slot.bookedBy,
+        userId: slot.userId,
+        participantCount: slot.participantCount,
+        inviteToken: slot.inviteToken,
       });
     }
   }
@@ -237,21 +243,69 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
                   </button>
                 )
                 : (
-                  <div class="min-h-[64px] flex items-center gap-3 px-4 bg-gray-100">
-                    <span class="text-[13px] font-bold text-crm-textMuted tabular-nums w-[92px] shrink-0">
-                      {seg.start} – {seg.end}
-                    </span>
-                    <span class="flex items-center gap-1.5 text-[12px] font-semibold text-crm-textMuted min-w-0">
-                      <Icon name="profile" class="w-4 h-4 shrink-0" />
-                      <span class="truncate">
-                        {seg.bookedBy ? `Band · ${seg.bookedBy}` : "Band"}
+                  <div class="min-h-[64px] flex items-center justify-between px-4 bg-crm-primarySoft/45">
+                    <div class="flex items-center gap-3">
+                      <span class="text-[13px] font-bold text-crm-primary tabular-nums w-[92px] shrink-0">
+                        {seg.start} – {seg.end}
                       </span>
-                    </span>
+                      <div class="flex flex-col min-w-0">
+                        <span class="flex items-center gap-1.5 text-[12px] font-semibold text-crm-primary">
+                          <Icon name="profile" class="w-4 h-4 shrink-0" />
+                          <span class="truncate">
+                            {seg.bookedBy ? `Band · ${seg.bookedBy}` : "Band"}
+                          </span>
+                        </span>
+                        {seg.participantCount !== undefined && seg.participantCount > 0 && (
+                          <span class="text-[11px] font-medium text-crm-primary/70 mt-0.5">
+                            {seg.participantCount} kishi qo'shilgan
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {seg.inviteToken && (
+                      <button
+                        data-user-id={seg.userId}
+                        data-invite-link={`https://t.me/your_bot_username/app?startapp=invite_${seg.inviteToken}`}
+                        class="hidden invite-copy-btn items-center justify-center p-2 rounded-full bg-crm-primary text-white shrink-0 tap-scale focus-ring"
+                        aria-label="Taklifnoma havolasini nusxalash"
+                      >
+                        <Icon name="copy" class="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 )
             )}
           </div>
         </Card>
+        <script>
+          {raw(`
+            (function setupInviteButtons() {
+              var initDataUnsafe = window.Telegram?.WebApp?.initDataUnsafe || {};
+              var currentUserId = initDataUnsafe.user?.id;
+              if (!currentUserId) return;
+              
+              var btns = document.querySelectorAll('.invite-copy-btn');
+              btns.forEach(function(btn) {
+                if (parseInt(btn.getAttribute('data-user-id')) === currentUserId) {
+                  btn.classList.remove('hidden');
+                  btn.classList.add('flex');
+                  
+                  btn.addEventListener('click', function() {
+                    var link = btn.getAttribute('data-invite-link');
+                    // Fallback to clipboard API if Telegram copy fails or doesn't exist
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(link).then(() => {
+                        window.showToast?.('Havola nusxalandi! Do\\'stlaringizga yuboring.', 'success');
+                      });
+                    } else {
+                      window.showToast?.('Nusxalashda xatolik yuz berdi.', 'error');
+                    }
+                  });
+                }
+              });
+            })();
+          `)}
+        </script>
         <div class="h-4"></div>
       </div>
       <RoleBottomNav role="user" activeId="week" />

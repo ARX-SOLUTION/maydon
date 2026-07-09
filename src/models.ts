@@ -55,6 +55,8 @@ export interface Booking {
   recurringId?: string;
   createdAt: string; // ISO
   decidedAt?: string; // ISO
+  inviteToken?: string; // For squad invitations
+  participantIds?: number[]; // Array of user IDs who joined
 }
 
 export interface Recurring {

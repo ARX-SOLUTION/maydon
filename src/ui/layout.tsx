@@ -183,6 +183,42 @@ document.body.addEventListener('htmx:afterRequest', function() {
   }
 });
 
+// Handle start_param for invitations (Squad feature)
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.Telegram?.WebApp) {
+    var startParam = window.Telegram.WebApp.initDataUnsafe?.start_param;
+    if (startParam && startParam.startsWith('invite_')) {
+      var token = startParam.replace('invite_', '');
+      var attempted = sessionStorage.getItem('invite_attempt_' + token);
+      
+      if (!attempted) {
+        sessionStorage.setItem('invite_attempt_' + token, 'true');
+        
+        fetch('/api/invite/' + token + '/join', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + window.Telegram.WebApp.initData
+          }
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.success) {
+            window.toast("Siz o'yinga muvaffaqiyatli qo'shildingiz!", 'success');
+            setTimeout(function() {
+              window.location.reload();
+            }, 1500);
+          } else {
+            window.toast(data.error || "Qo'shilishda xatolik yuz berdi", 'error');
+          }
+        })
+        .catch(function(err) {
+          window.toast("Xatolik yuz berdi", 'error');
+        });
+      }
+    }
+  }
+});
+
 // GSAP stagger entrance animation
 function runAnimations() {
   var elements = document.querySelectorAll('.gsap-stagger');
