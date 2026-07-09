@@ -90,10 +90,13 @@ export async function notifyUserRejected(
     `Sabab: ${reason}`;
 
   if (alternativeSlots && alternativeSlots.length > 0) {
-    text += `\n\n**Bo'sh vaqtlar:**\n`;
+    text += `\n\n**Shu kundagi bo'sh vaqtlar:**\n`;
     for (const slot of alternativeSlots.slice(0, 5)) {
       text += `• ${slot.start} - ${slot.end}\n`;
     }
+    text += `\nBoshqa vaqtga qayta so'rov yuborishingiz mumkin.`;
+  } else {
+    text += `\n\nAfsuski, bu kun uchun hozircha bo'sh vaqt yo'q. Boshqa kunni tanlab ko'ring.`;
   }
 
   await bot.sendMessage(userId, text, { parse_mode: "Markdown" });

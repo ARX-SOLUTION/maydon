@@ -7,6 +7,7 @@ import {
   getAdmin,
   getBooking,
   getPendingRequests,
+  getSettings,
   getUser,
   kv,
 } from "../kv.ts";
@@ -15,6 +16,10 @@ import {
   confirmBooking,
   rejectBooking,
 } from "../services/booking.ts";
+import {
+  findFreeRanges,
+  getDayAvailability,
+} from "../services/availability.ts";
 import {
   notifyNewRequest,
   notifyUserConfirmed,
@@ -108,6 +113,24 @@ async function editDecided(
     .catch(() => {}); // stale/old/"not modified" messages: nothing to do
 }
 
+// Up to 5 free slot-ranges for a day, to offer as alternatives after a rejection.
+async function freeAlternatives(
+  date: string,
+): Promise<Array<{ start: string; end: string }>> {
+  try {
+    const settings = await getSettings();
+    const { slots } = await getDayAvailability(date);
+    const ranges = findFreeRanges(
+      slots,
+      settings?.minDurMin ?? 60,
+      settings?.maxDurMin ?? 180,
+    );
+    return ranges.slice(0, 5).map((r) => ({ start: r.start, end: r.end }));
+  } catch {
+    return [];
+  }
+}
+
 export function registerDecisions(): void {
   // Filtered callback handlers (not a catch-all) so other modules can register
   // their own callback actions without being swallowed by a default branch.
@@ -159,8 +182,10 @@ export function registerDecisions(): void {
     const booking = await getBooking(bookingId);
     if (booking) {
       await editDecided(ctx, booking, "❌ Rad etildi", ctx.from?.first_name);
+      // #14: DM the user their request was rejected, with the day's free slots.
+      const alternatives = await freeAlternatives(booking.date);
+      await notifyUserRejection(booking, "So'rov tasdiqlanmadi", alternatives);
     }
-    // TODO(#14): send alternative slots to the user
   });
 
   bot.callbackQuery(/^cancel:(.+)$/, async (ctx: any) => {
