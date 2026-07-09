@@ -90,16 +90,14 @@ export function authMiddleware() {
   return async (c: any, next: () => Promise<void>) => {
     const authHeader = c.req.header("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      c.json({ error: "Unauthorized" }, 401);
-      return;
+      return c.json({ error: "Unauthorized" }, 401);
     }
 
     const initData = authHeader.slice(7);
     const result = await verifyInitData(initData);
 
     if (!result.valid) {
-      c.json({ error: result.error }, 401);
-      return;
+      return c.json({ error: result.error }, 401);
     }
 
     // Check admin status
@@ -119,8 +117,7 @@ export function requireAdmin() {
   return async (c: any, next: () => Promise<void>) => {
     const auth = c.get("auth") as AuthState | undefined;
     if (!auth?.isAdmin) {
-      c.json({ error: "Forbidden" }, 403);
-      return;
+      return c.json({ error: "Forbidden" }, 403);
     }
     await next();
   };

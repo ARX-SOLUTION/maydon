@@ -47,6 +47,38 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async ({ selectedDate
         subtitle={`${days[0].display} - ${days[days.length - 1].display}`}
       />
       <div class="px-5 space-y-4">
+        {/* First-time explainer — dismissible, remembered via localStorage */}
+        <div id="onboardHint" class="p-4 bg-crm-primarySoft/40 border border-crm-primary/20 rounded-[18px] flex items-start gap-3 gsap-stagger">
+          <div class="w-8 h-8 rounded-full bg-crm-primary/15 flex items-center justify-center shrink-0">
+            <Icon name="calendar" class="w-4 h-4 text-crm-primary" />
+          </div>
+          <div class="flex-1">
+            <p class="text-[13px] font-bold text-crm-textMain mb-0.5">Qanday ishlaydi?</p>
+            <p class="text-[12px] text-crm-textMuted leading-relaxed">
+              Yashil katakchalar — bo'sh vaqtlar. Birontasini bosing, davomiylikni tanlang va so'rov yuboring. Admin tasdiqlagach, joyingiz band bo'ladi.
+            </p>
+          </div>
+          <button onclick="dismissWeekHint()" aria-label="Yopish" class="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-crm-textMuted active:bg-black/5">
+            <Icon name="xCircle" class="w-4 h-4" />
+          </button>
+        </div>
+        <script>{raw(`
+          if (localStorage.getItem('maydon_week_hint_dismissed')) {
+            var h = document.getElementById('onboardHint');
+            if (h) h.remove();
+          }
+          function dismissWeekHint() {
+            localStorage.setItem('maydon_week_hint_dismissed', '1');
+            var el = document.getElementById('onboardHint');
+            if (!el) return;
+            if (window.gsap) {
+              gsap.to(el, { height: 0, opacity: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0, duration: 0.25, ease: 'power1.in', onComplete: function() { el.remove(); } });
+            } else {
+              el.remove();
+            }
+          }
+        `)}</script>
+
         {/* Date selector */}
         <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-2 gsap-stagger">
           {days.map(d => (
@@ -70,6 +102,10 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async ({ selectedDate
             <span class="font-bold text-[15px]">Bo'sh vaqtlar</span>
             <span class="text-[12px] font-medium text-crm-textMuted bg-crm-surface px-2 py-1 rounded-md shadow-sm">30 daqiqa</span>
           </div>
+          <div class="px-4 py-2 border-b border-crm-borderSoft flex items-center gap-4 bg-crm-surface">
+            <span class="flex items-center gap-1.5 text-[11px] font-semibold text-crm-textMuted"><span class="w-2.5 h-2.5 rounded-full bg-crm-successSoft border border-crm-success/40"></span> Bo'sh — bosing va band qiling</span>
+            <span class="flex items-center gap-1.5 text-[11px] font-semibold text-crm-textMuted"><span class="w-2.5 h-2.5 rounded-full bg-gray-200 border border-gray-300"></span> Band</span>
+          </div>
           <div class="flex flex-col">
             {groupedSlots.length === 0
               ? <div class="p-8 text-center text-crm-textMuted text-sm font-medium">Bu sana uchun ma'lumot yo'q</div>
@@ -84,12 +120,12 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async ({ selectedDate
                     <button
                       {...(!slot.isBusy ? { 'hx-get': `/app/user/day?date=${targetDate}&start=${slot.start}` } : {})}
                       hx-target="#app-content"
-                      class={`flex-1 border-b border-crm-borderSoft border-dashed last:border-b-0 transition-colors flex items-center px-3 ${slot.isBusy ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'hover:bg-crm-primarySoft/30 active:bg-crm-primarySoft/40'}`}
+                      class={`flex-1 border-b border-crm-borderSoft border-dashed last:border-b-0 transition-colors flex items-center px-3 ${slot.isBusy ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-crm-successSoft/40 hover:bg-crm-successSoft active:bg-crm-successSoft'}`}
                       disabled={slot.isBusy}
                     >
                       {slot.isBusy
                         ? <span class="text-[12px] font-bold text-crm-textMuted flex items-center"><Icon name="xCircle" class="w-3.5 h-3.5 mr-1.5" /> Band</span>
-                        : <span class="text-[12px] font-semibold text-crm-primary transition-opacity">+ {slot.start} Bron qilish</span>}
+                        : <span class="text-[12px] font-semibold text-crm-success transition-opacity">+ {slot.start} Bron qilish</span>}
                     </button>
                   ))}
                 </div>

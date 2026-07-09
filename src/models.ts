@@ -4,6 +4,8 @@ export interface User {
   username?: string;
   phone?: string;
   isBlocked: boolean;
+  isActive: boolean; // true once onboarding (phone + name) is complete
+  onboardingStep?: "phone" | "name"; // what the bot is waiting for next
   createdAt: string; // ISO
 }
 

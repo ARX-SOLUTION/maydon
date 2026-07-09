@@ -11,29 +11,29 @@ tailwind.config = {
       },
       colors: {
         crm: {
-          bg: '#FFFBEB',
+          bg: '#F8FAFC',
           surface: '#FFFFFF',
-          surfaceSoft: '#FEF3C7',
-          primary: '#F59E0B',
-          primarySoft: '#FDE68A',
+          surfaceSoft: '#EFF6FF',
+          primary: '#0369A1',
+          primarySoft: '#BAE6FD',
           onPrimary: '#0F172A',
-          secondary: '#FBBF24',
-          accent: '#2563EB',
+          secondary: '#0EA5E9',
+          accent: '#0369A1',
           success: '#16A34A',
           successSoft: '#DCFCE7',
-          warning: '#F59E0B',
+          warning: '#D97706',
           warningSoft: '#FEF3C7',
           danger: '#DC2626',
           dangerSoft: '#FEE2E2',
-          textMain: '#78350F',
-          textMuted: '#92400E',
-          borderSoft: '#FDE68A',
-          muted: '#F1F2EF',
+          textMain: '#0F172A',
+          textMuted: '#64748B',
+          borderSoft: '#E2E8F0',
+          muted: '#F1F5F9',
         }
       },
       boxShadow: {
-        soft: '0 8px 24px rgba(245, 158, 11, 0.08)',
-        floating: '0 12px 28px rgba(37, 99, 235, 0.15)',
+        soft: '0 8px 24px rgba(3, 105, 161, 0.08)',
+        floating: '0 12px 28px rgba(3, 105, 161, 0.18)',
         glass: '0 4px 30px rgba(0, 0, 0, 0.05)',
       },
       borderRadius: {
@@ -51,8 +51,8 @@ const inlineStyles = `
   -moz-osx-font-smoothing: grayscale;
 }
 body {
-  background-color: #FFFBEB;
-  color: #78350F;
+  background-color: #F8FAFC;
+  color: #0F172A;
   font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
@@ -84,8 +84,8 @@ const clientScript = `
 if (window.Telegram?.WebApp) {
   window.Telegram.WebApp.ready();
   window.Telegram.WebApp.expand();
-  window.Telegram.WebApp.setHeaderColor('#FFFBEB');
-  window.Telegram.WebApp.setBackgroundColor('#FFFBEB');
+  window.Telegram.WebApp.setHeaderColor('#F8FAFC');
+  window.Telegram.WebApp.setBackgroundColor('#F8FAFC');
 }
 
 // HTMX config — inject auth header
@@ -133,7 +133,7 @@ document.body.addEventListener('htmx:responseError', function(evt) {
 
 // Top progress bar during htmx navigation (SSR page swaps have no built-in feedback)
 var navBar = document.createElement('div');
-navBar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:#F59E0B;z-index:200;width:0%;opacity:0;pointer-events:none;';
+navBar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:#0369A1;z-index:200;width:0%;opacity:0;pointer-events:none;';
 document.body.appendChild(navBar);
 document.body.addEventListener('htmx:beforeRequest', function() {
   if (window.gsap) {

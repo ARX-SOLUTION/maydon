@@ -2,7 +2,7 @@
  * Telegram Bot — grammY handlers
  */
 
-import { Bot, InlineKeyboard } from "grammy";
+import { Bot, InlineKeyboard, Keyboard } from "grammy";
 import {
   getAdmin,
   getPendingRequests,
@@ -22,7 +22,7 @@ import {
   notifyUserQueued,
   notifyUserRejected,
 } from "../services/notify.ts";
-import type { Booking } from "../models.ts";
+import type { Booking, User } from "../models.ts";
 
 const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
 if (!botToken) {
@@ -49,6 +49,36 @@ const botContext = {
   },
 };
 
+function miniAppKeyboard(): InlineKeyboard {
+  return new InlineKeyboard().url(
+    "📅 Band qilish",
+    Deno.env.get("MINI_APP_URL") ?? "https://maydon.uz",
+  );
+}
+
+// Ask for whatever onboarding step the user is currently on
+async function sendOnboardingPrompt(ctx: any, user: User): Promise<void> {
+  if (user.onboardingStep === "name") {
+    await ctx.reply(
+      "Endi to'liq ismingizni yozib yuboring (masalan: Ali Valiyev):",
+      { reply_markup: { remove_keyboard: true } },
+    );
+    return;
+  }
+
+  const keyboard = new Keyboard()
+    .requestContact("📞 Telefon raqamni yuborish")
+    .resized()
+    .oneTime();
+
+  await ctx.reply(
+    `Assalomu alaykum, ${user.name}! 👋\n\n` +
+      `Bu Maydon Booking boti — futbol maydonini band qilish uchun.\n\n` +
+      `Ro'yxatdan o'tish uchun pastdagi tugma orqali telefon raqamingizni yuboring:`,
+    { reply_markup: keyboard },
+  );
+}
+
 // /start command
 bot.command("start", async (ctx: any) => {
   const userId = ctx.from?.id;
@@ -61,6 +91,8 @@ bot.command("start", async (ctx: any) => {
       name: ctx.from?.first_name ?? "Unknown",
       username: ctx.from?.username,
       isBlocked: false,
+      isActive: false,
+      onboardingStep: "phone",
       createdAt: new Date().toISOString(),
     };
     await upsertUser(user);
@@ -68,28 +100,22 @@ bot.command("start", async (ctx: any) => {
 
   const isAdmin = !!(await getAdmin(userId));
 
+  // Regular (non-admin) users must finish onboarding before they can book
+  if (!isAdmin && !user.isActive) {
+    await sendOnboardingPrompt(ctx, user);
+    return;
+  }
+
   const welcomeText =
     `Assalomu alaykum, ${user.name}! 👋\n\n` +
     `Bu Maydon Booking boti.\n` +
     `Futbol maydonini band qilish uchun Mini App'dan foydalaning.\n\n` +
     (isAdmin ? "✅ Siz adminsiz." : "");
 
-  const keyboard = new InlineKeyboard();
-  keyboard.url(
-    "📅 Band qilish",
-    Deno.env.get("MINI_APP_URL") ?? "https://maydon.uz",
-  );
-
-  if (!user.phone) {
-    keyboard.text("📞 Telefon raqam yuborish", "contact");
-  }
-
-  await ctx.reply(welcomeText, {
-    reply_markup: keyboard,
-  });
+  await ctx.reply(welcomeText, { reply_markup: miniAppKeyboard() });
 });
 
-// Contact handler
+// Contact handler — step 1 of onboarding (or a phone update for existing users)
 bot.on("message:contact", async (ctx: any) => {
   const userId = ctx.from?.id;
   const contact = ctx.message?.contact;
@@ -100,9 +126,41 @@ bot.on("message:contact", async (ctx: any) => {
   if (!user) return;
 
   user.phone = contact.phone_number;
+
+  if (!user.isActive) {
+    user.onboardingStep = "name";
+    await upsertUser(user);
+    await ctx.reply(
+      "✅ Raqam qabul qilindi!\n\nEndi to'liq ismingizni yozib yuboring (masalan: Ali Valiyev):",
+      { reply_markup: { remove_keyboard: true } },
+    );
+    return;
+  }
+
+  await upsertUser(user);
+  await ctx.reply("✅ Raqamingiz yangilandi!", {
+    reply_markup: { remove_keyboard: true },
+  });
+});
+
+// Text handler — step 2 of onboarding (full name), then activates the account
+bot.on("message:text", async (ctx: any) => {
+  const userId = ctx.from?.id;
+  const text = ctx.message?.text?.trim();
+  if (!userId || !text || text.startsWith("/")) return;
+
+  const user = await getUser(userId);
+  if (!user || user.isActive || user.onboardingStep !== "name") return;
+
+  user.name = text;
+  user.isActive = true;
+  user.onboardingStep = undefined;
   await upsertUser(user);
 
-  await ctx.reply("✅ Raqamingiz saqlandi!");
+  await ctx.reply(
+    `✅ Ro'yxatdan o'tish yakunlandi, ${user.name}!\n\nEndi maydonni band qilishingiz mumkin.`,
+    { reply_markup: miniAppKeyboard() },
+  );
 });
 
 // Callback query handler for inline buttons

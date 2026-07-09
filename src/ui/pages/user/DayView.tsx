@@ -94,7 +94,31 @@ async function submitBooking() {
 }
 
 updateEnds();
+
+// Booking is gated on completed bot onboarding (phone + name) — check before letting anyone submit
+(async function checkActive() {
+  var formEl = document.getElementById('bookingForm');
+  var noticeEl = document.getElementById('inactiveNotice');
+  if (!formEl || !noticeEl) return;
+  try {
+    var initData = window.Telegram?.WebApp?.initData || '';
+    var res = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + initData } });
+    var data = await res.json();
+    if (res.ok && !data.isActive) {
+      formEl.style.display = 'none';
+      noticeEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    // network hiccup — leave the form as-is, the server-side check is the real gate
+  }
+})();
 `;
+
+function fmtHours(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h} soat` : `${h} soat ${m} daqiqa`;
+}
 
 export const UserDayView: FC<{ date?: string; start?: string }> = async ({ date, start }) => {
   const dateStr = date || new Date().toISOString().slice(0, 10);
@@ -138,9 +162,22 @@ export const UserDayView: FC<{ date?: string; start?: string }> = async ({ date,
       <div class="px-5 space-y-5">
         <input type="hidden" id="bookDate" value={dateStr} />
 
+        {/* Shown only if the bot-onboarding gate blocks booking (checked client-side) */}
+        <div id="inactiveNotice" class="hidden p-4 bg-crm-warningSoft border border-crm-warning/30 rounded-[18px] flex items-start gap-3 gsap-stagger">
+          <div class="w-8 h-8 rounded-full bg-crm-warning/20 flex items-center justify-center shrink-0">
+            <Icon name="bell" class="w-4 h-4 text-crm-warning" />
+          </div>
+          <p class="text-[13px] text-crm-textMain leading-relaxed">
+            Band qilishdan oldin ro'yxatdan o'tishni yakunlang: Telegram botga qayting va <b>/start</b> bosing, telefon raqamingizni yuboring va ismingizni yozing.
+          </p>
+        </div>
+
+        <div id="bookingForm" class="space-y-5">
+
         {/* Time selection */}
         <Card class="gsap-stagger">
           <h2 class="text-[15px] font-bold px-1 mb-1">Vaqtni tanlang</h2>
+          <p class="text-[12px] text-crm-textMuted px-1 -mt-1 mb-1">Har bir bron {fmtHours(minDur)} dan {fmtHours(maxDur)} gacha bo'lishi mumkin</p>
 
           <div class="flex items-center gap-3 bg-crm-surfaceSoft rounded-[16px] p-3">
             <div class="flex-1">
@@ -195,6 +232,7 @@ export const UserDayView: FC<{ date?: string; start?: string }> = async ({ date,
           <Icon name="check" class="w-5 h-5" /> So'rov yuborish
         </button>
 
+        </div>
         <div class="h-4"></div>
       </div>
       <script>{raw(bookingScript.replace('__SLOT_MAP__', JSON.stringify(slotMap)))}</script>

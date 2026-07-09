@@ -177,6 +177,7 @@ api.post("/admin/users/:id/block", async (c: any) => {
       telegramId,
       name: "Unknown",
       isBlocked: true,
+      isActive: false,
       createdAt: new Date().toISOString(),
     };
   } else {

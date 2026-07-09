@@ -56,6 +56,12 @@ export async function validateBookingRequest(
   if (user?.isBlocked) {
     return { valid: false, error: "Siz bloklangansiz" };
   }
+  if (!user?.isActive) {
+    return {
+      valid: false,
+      error: "Avval botda ro'yxatdan o'tishni yakunlang (/start bosing)",
+    };
+  }
 
   // Snap validation
   const snap = settings.snapMin;

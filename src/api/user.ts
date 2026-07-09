@@ -24,6 +24,8 @@ api.get("/me", async (c: any) => {
       telegramId: auth.userId,
       name: auth.userName ?? "Unknown",
       isBlocked: false,
+      isActive: false,
+      onboardingStep: "phone",
       createdAt: new Date().toISOString(),
     };
     await upsertUser(user);
@@ -35,6 +37,7 @@ api.get("/me", async (c: any) => {
     username: user.username,
     phone: user.phone,
     isAdmin: auth.isAdmin,
+    isActive: auth.isAdmin ? true : user.isActive,
   });
 });
 
