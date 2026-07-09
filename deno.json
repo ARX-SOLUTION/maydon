@@ -4,6 +4,7 @@
   "nodeModulesDir": "auto",
   "tasks": {
     "dev": "deno serve --env --unstable-kv --unstable-cron --allow-all --watch src/main.ts",
+    "build:css": "deno run -A --node-modules-dir npm:tailwindcss@3 -c tailwind.config.js -i src/styles/input.css -o static/app.css --minify",
     "deploy": "deployctl deploy --project=maydon-booking src/main.ts",
     "test": "deno test --unstable-kv --unstable-cron --allow-all",
     "prisma": "deno run -A --env-file=.env npm:prisma",

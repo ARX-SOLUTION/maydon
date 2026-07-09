@@ -38,6 +38,9 @@ api.get("/me", async (c: any) => {
     phone: user.phone,
     isAdmin: auth.isAdmin,
     isActive: auth.isAdmin ? true : user.isActive,
+    role: auth.role ?? null,
+    isOwner: auth.isOwner,
+    memberSince: user.createdAt,
   });
 });
 

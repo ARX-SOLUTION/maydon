@@ -3,6 +3,7 @@
  */
 
 import { Hono } from "hono";
+import { serveStatic } from "hono/deno";
 import { webhookCallback } from "grammy";
 import adminApi from "./api/admin.ts";
 import userApi from "./api/user.ts";
@@ -54,6 +55,10 @@ if (ownerId !== null) {
   // Only runs with a known owner — an unset ADMIN_TELEGRAM_ID must NOT demote everyone.
   await migrateAdminRoles(ownerId);
 }
+
+// Static assets (precompiled Tailwind at /static/app.css). Committed to the repo
+// so Deno Deploy — which has no build step — serves it straight from the deployment.
+app.use("/static/*", serveStatic({ root: "./" }));
 
 // UI and Web routes
 app.get("/", (c) => c.redirect("/app/user/week"));

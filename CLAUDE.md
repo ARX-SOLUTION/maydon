@@ -24,11 +24,20 @@ Never scaffold a Node project on top of this one.
 | Task | Command |
 |------|---------|
 | Dev server (watch) | `deno task dev` |
+| Build CSS | `deno task build:css` (see gotcha below) |
 | Tests | `deno task test` |
 | Typecheck | `deno check src/main.ts` |
 | Deploy | `deno task deploy` (see Deploy note below) |
 
 The unstable flags `--unstable-kv --unstable-cron` are required (KV + `Deno.cron`).
+
+⚠️ **Tailwind is precompiled, not CDN.** `static/app.css` is a built artifact
+committed to the repo (Deno Deploy has no build step). The old
+`cdn.tailwindcss.com` compiler recompiled on every HTMX DOM swap — the app's
+biggest slowdown — so it was removed. **If you add/change a Tailwind class in any
+`.tsx`/`.ts`, run `deno task build:css` and commit the regenerated
+`static/app.css`, or the class won't be styled in production.** The theme lives in
+`tailwind.config.js` (ported from the old in-`<head>` config).
 
 ---
 
@@ -40,7 +49,7 @@ The unstable flags `--unstable-kv --unstable-cron` are required (KV + `Deno.cron
 | HTTP | Hono (`jsr:@hono/hono`) |
 | Bot | grammY (`npm:grammy`), **webhook mode** (not long-polling) |
 | Storage | **Deno KV** |
-| UI | Hono JSX SSR + HTMX + Tailwind (CDN) + GSAP (CDN) |
+| UI | Hono JSX SSR + HTMX + **precompiled Tailwind** (`static/app.css`) + GSAP (CDN) |
 | Auth | Telegram Mini App `initData` (HMAC) |
 | IDs | `npm:ulid` |
 
