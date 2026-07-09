@@ -4,6 +4,7 @@
 
 import { Bot, InlineKeyboard, Keyboard } from "grammy";
 import {
+  addAdmin,
   getAdmin,
   getPendingRequests,
   getUser,
@@ -113,6 +114,57 @@ bot.command("start", async (ctx: any) => {
     (isAdmin ? "✅ Siz adminsiz." : "");
 
   await ctx.reply(welcomeText, { reply_markup: miniAppKeyboard() });
+});
+
+// /addadmin <telegram_id> — existing admins promote someone to admin
+bot.command("addadmin", async (ctx: any) => {
+  const userId = ctx.from?.id;
+  if (!userId) return;
+
+  const isAdmin = !!(await getAdmin(userId));
+  if (!isAdmin) {
+    await ctx.reply("Faqat adminlar uchun");
+    return;
+  }
+
+  const arg = (ctx.match ?? "").trim();
+  const targetId = Number(arg);
+  if (!arg || !Number.isInteger(targetId) || targetId <= 0) {
+    await ctx.reply(
+      "Foydalanish: /addadmin <telegram_id>\n\nMasalan: /addadmin 123456789",
+    );
+    return;
+  }
+
+  const targetUser = await getUser(targetId);
+  if (!targetUser) {
+    await ctx.reply(
+      "Bu foydalanuvchi hali botdan foydalanmagan. Avval u botga /start bosishi kerak.",
+    );
+    return;
+  }
+
+  if (await getAdmin(targetId)) {
+    await ctx.reply(`${targetUser.name} allaqachon admin.`);
+    return;
+  }
+
+  await addAdmin({
+    telegramId: targetId,
+    name: targetUser.name,
+    addedAt: new Date().toISOString(),
+  });
+
+  await ctx.reply(`✅ ${targetUser.name} endi admin!`);
+
+  try {
+    await bot.api.sendMessage(
+      targetId,
+      "✅ Siz admin etib tayinlandingiz! Mini App orqali boshqaruv panelidan foydalanishingiz mumkin.",
+    );
+  } catch (e) {
+    console.error("Failed to notify new admin:", e);
+  }
 });
 
 // Contact handler — step 1 of onboarding (or a phone update for existing users)

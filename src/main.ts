@@ -26,6 +26,7 @@ if (adminId) {
 }
 
 // UI and Web routes
+app.get("/", (c) => c.redirect("/app/user/week"));
 app.route("/app", uiRouter);
 
 // API routes
