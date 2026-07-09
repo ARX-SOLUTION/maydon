@@ -75,6 +75,29 @@ async function submitManualBooking(btn) {
     btn.innerHTML = oldLabel;
   }
 }
+}
+
+async function cancelAdminBooking(id, date) {
+  if (!confirm("Haqiqatan ham ushbu bronni bekor qilmoqchimisiz? (Mijoz kelmadi / No-show)")) return;
+  try {
+    var initData = window.Telegram?.WebApp?.initData || '';
+    var res = await fetch('/api/admin/bookings/' + id + '/cancel', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + initData
+      }
+    });
+    var data = await res.json();
+    if (res.ok && data.success) {
+      window.toast("Bron bekor qilindi", 'success');
+      htmx.ajax('GET', '/app/admin/schedule?date=' + encodeURIComponent(date), '#app-content');
+    } else {
+      window.toast(data.error || 'Xatolik yuz berdi', 'error');
+    }
+  } catch (e) {
+    window.toast('Xato: ' + e.message, 'error');
+  }
+}
 `;
 
 export const AdminSchedule: FC<{ selectedDate?: string }> = async (
@@ -325,18 +348,29 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                               {booking?.clientName || "Band"}
                             </span>
                           </span>
-                          {booking?.clientPhone
-                            ? (
-                              <a
-                                href={`tel:${
-                                  booking.clientPhone.replace(/\s+/g, "")
-                                }`}
-                                class="text-[12px] font-bold text-crm-primary tabular-nums focus-ring rounded-md"
+                          <div class="flex items-center gap-3">
+                            {booking?.clientPhone
+                              ? (
+                                <a
+                                  href={`tel:${
+                                    booking.clientPhone.replace(/\s+/g, "")
+                                  }`}
+                                  class="text-[12px] font-bold text-crm-primary tabular-nums focus-ring rounded-md"
+                                >
+                                  {booking.clientPhone}
+                                </a>
+                              )
+                              : null}
+                            {booking?.id ? (
+                              <button
+                                onclick={`cancelAdminBooking('${booking.id}', '${targetDate}')`}
+                                class="w-8 h-8 flex items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 tap-scale focus-ring"
+                                aria-label="Bekor qilish"
                               >
-                                {booking.clientPhone}
-                              </a>
-                            )
-                            : null}
+                                <Icon name="xCircle" class="w-4 h-4" />
+                              </button>
+                            ) : null}
+                          </div>
                         </div>
                       )
                       : (
