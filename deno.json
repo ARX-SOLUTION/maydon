@@ -1,14 +1,21 @@
 {
   "name": "@maydon/booking",
   "version": "0.1.0",
+  "nodeModulesDir": "auto",
   "tasks": {
     "dev": "deno serve --env --unstable-kv --unstable-cron --allow-all --watch src/main.ts",
     "deploy": "deployctl deploy --project=maydon-booking src/main.ts",
-    "test": "deno test --unstable-kv --unstable-cron --allow-all"
+    "test": "deno test --unstable-kv --unstable-cron --allow-all",
+    "prisma": "deno run -A --env-file=.env npm:prisma",
+    "db:seed": "deno run -A --env-file=.env prisma/seed.ts",
+    "db:verify": "deno run -A --env-file=.env scripts/verify-prisma.ts"
   },
   "imports": {
+    "@prisma/adapter-pg": "npm:@prisma/adapter-pg@^7.8.0",
+    "@prisma/client": "npm:@prisma/client@^7.8.0",
     "hono": "jsr:@hono/hono@^4",
     "grammy": "npm:grammy@^1",
+    "pg": "npm:pg@^8.22.0",
     "ulid": "npm:ulid@^2",
     "@std/assert": "jsr:@std/assert@^1"
   },

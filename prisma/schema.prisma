@@ -1,0 +1,27 @@
+// Prisma schema for Maydon. Deno-native: run the CLI with `deno run -A npm:prisma …`.
+// Prisma 7: the connection URL lives in prisma.config.ts, not here.
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  runtime  = "deno"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Starter models — replace with your own (real domain: users, bookings, notifications).
+model Venue {
+  id        Int       @id @default(autoincrement())
+  name      String
+  createdAt DateTime  @default(now())
+  bookings  Booking[]
+}
+
+model Booking {
+  id        Int      @id @default(autoincrement())
+  slot      String
+  venue     Venue    @relation(fields: [venueId], references: [id])
+  venueId   Int
+  createdAt DateTime @default(now())
+}
