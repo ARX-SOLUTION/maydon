@@ -81,26 +81,71 @@ window.toast = function(message, type) {
   if (!toastWrap) {
     toastWrap = document.createElement('div');
     toastWrap.id = 'toastWrap';
-    toastWrap.className = 'fixed right-4 bottom-4 z-60 flex flex-col gap-2 w-[min(380px,calc(100%-2rem))] pointer-events-none';
+    toastWrap.className = 'fixed left-0 right-0 z-[100] flex flex-col items-center gap-2 pointer-events-none px-4';
+    toastWrap.style.top = 'max(16px, env(safe-area-inset-top))';
     toastWrap.setAttribute('aria-live', 'polite');
     toastWrap.setAttribute('aria-atomic', 'true');
     document.body.appendChild(toastWrap);
   }
   var box = document.createElement('div');
-  box.className = 'px-4 py-3 rounded-[18px] bg-crm-onPrimary/95 text-white shadow-floating text-sm font-bold pointer-events-auto';
+  box.className = 'px-4 py-3 rounded-[18px] bg-crm-onPrimary/95 text-white shadow-floating text-sm font-bold pointer-events-auto touch-none w-[min(380px,100%)] select-none';
   box.setAttribute('role', 'status');
   if (type === 'error') box.className += ' !bg-crm-danger';
   if (type === 'success') box.className += ' !bg-crm-success';
   box.textContent = message;
   toastWrap.appendChild(box);
-  if (window.gsap) {
-    gsap.fromTo(box, { y: 18, autoAlpha: 0, scale: .96 }, { y: 0, autoAlpha: 1, scale: 1, duration: .26, ease: 'back.out(1.5)' });
-    setTimeout(function() {
-      gsap.to(box, { y: 12, autoAlpha: 0, duration: .22, ease: 'power2.in', onComplete: function() { box.remove(); } });
-    }, 4400);
-  } else {
-    setTimeout(function() { box.remove(); }, 4400);
+
+  var closeAnim;
+  var isRemoved = false;
+  
+  function removeToast() {
+    if (isRemoved) return;
+    isRemoved = true;
+    if (window.gsap) {
+      gsap.to(box, { y: -20, autoAlpha: 0, duration: 0.22, ease: 'power2.in', onComplete: function() { box.remove(); } });
+    } else {
+      box.remove();
+    }
   }
+
+  if (window.gsap) {
+    gsap.fromTo(box, { y: -20, autoAlpha: 0, scale: .96 }, { y: 0, autoAlpha: 1, scale: 1, duration: .26, ease: 'back.out(1.5)' });
+    closeAnim = setTimeout(removeToast, 4400);
+  } else {
+    closeAnim = setTimeout(removeToast, 4400);
+  }
+
+  var startY = 0;
+  var currentY = 0;
+  box.addEventListener('touchstart', function(e) {
+    startY = e.touches[0].clientY;
+    clearTimeout(closeAnim);
+    if (window.gsap) gsap.killTweensOf(box);
+  }, { passive: true });
+  
+  box.addEventListener('touchmove', function(e) {
+    currentY = e.touches[0].clientY;
+    var dy = currentY - startY;
+    if (dy < 0) {
+      if (window.gsap) gsap.set(box, { y: dy });
+      else box.style.transform = 'translateY(' + dy + 'px)';
+    }
+  }, { passive: true });
+  
+  box.addEventListener('touchend', function(e) {
+    var dy = currentY - startY;
+    if (dy < -30) {
+      removeToast();
+    } else {
+      if (window.gsap) {
+        gsap.to(box, { y: 0, duration: 0.3, ease: 'back.out(1.5)' });
+        closeAnim = setTimeout(removeToast, 4400);
+      } else {
+        box.style.transform = 'none';
+        closeAnim = setTimeout(removeToast, 4400);
+      }
+    }
+  }, { passive: true });
 };
 
 // HTMX Error Handling

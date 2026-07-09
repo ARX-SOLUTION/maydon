@@ -2,7 +2,7 @@
 import { Hono } from "hono";
 import { raw } from "hono/html";
 import { UserWeekView } from "./pages/user/WeekView.tsx";
-import { UserDayView } from "./pages/user/DayView.tsx";
+import { UserBookCard } from "./components/BookCard.tsx";
 import { UserRequests } from "./pages/user/MyRequests.tsx";
 import { AdminRequests } from "./pages/admin/Requests.tsx";
 import { AdminSchedule } from "./pages/admin/Schedule.tsx";
@@ -36,9 +36,9 @@ uiRouter.get("/user/week", (c) => {
   const date = c.req.query("date");
   return c.html(<UserWeekView selectedDate={date} />);
 });
-uiRouter.get("/user/day", (c) => {
+uiRouter.get("/user/book-card", (c) => {
   return c.html(
-    <UserDayView date={c.req.query("date")} start={c.req.query("start")} />,
+    <UserBookCard date={c.req.query("date")} start={c.req.query("start")} />,
   );
 });
 uiRouter.get("/user/requests", authMiddleware(), (c: any) => {

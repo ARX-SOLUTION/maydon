@@ -221,8 +221,9 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async (
               seg.kind === "free"
                 ? (
                   <button
-                    hx-get={`/app/user/day?date=${targetDate}&start=${seg.start}`}
-                    hx-target="#app-content"
+                    hx-get={`/app/user/book-card?date=${targetDate}&start=${seg.start}`}
+                    hx-target="body"
+                    hx-swap="beforeend"
                     aria-label={`${seg.start} uchun bron qilish`}
                     class="min-h-[52px] flex items-center gap-3 px-4 bg-crm-successSoft/45 hover:bg-crm-successSoft active:bg-crm-successSoft transition-colors duration-150 ease-out focus-ring text-left"
                   >
