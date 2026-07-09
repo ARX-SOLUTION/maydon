@@ -1,12 +1,13 @@
 /** @jsxImportSource hono/jsx */
-import { raw } from 'hono/html';
-import type { FC } from 'hono/jsx';
-import { AppShell, PageHeader, Card } from '../../components/UIComponents.tsx';
-import { RoleBottomNav } from '../../components/RoleBottomNav.tsx';
-import { Icon } from '../../components/LucideIcons.tsx';
-import { getDayAvailability } from '../../../services/availability.ts';
-import { getSettings } from '../../../kv.ts';
-import { timeToMinutes } from '../../../services/booking.ts';
+import { raw } from "hono/html";
+import type { FC } from "hono/jsx";
+import { AppShell, Card, PageHeader } from "../../components/UIComponents.tsx";
+import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
+import { Icon } from "../../components/LucideIcons.tsx";
+import { getDayAvailability } from "../../../services/availability.ts";
+import { getSettings } from "../../../kv.ts";
+import { timeToMinutes } from "../../../services/booking.ts";
+import { dateFromYmd, formatUzLongDate, toYmd } from "../../date.ts";
 
 const bookingScript = `
 var SLOT_MAP = __SLOT_MAP__;
@@ -67,7 +68,11 @@ async function submitBooking() {
   }
 
   var btn = document.getElementById('submitBtn');
-  if (btn) btn.disabled = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.dataset.label = btn.innerHTML;
+    btn.innerHTML = '<span class="inline-block w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin"></span> Yuborilmoqda...';
+  }
 
   try {
     var initData = window.Telegram?.WebApp?.initData || '';
@@ -85,11 +90,17 @@ async function submitBooking() {
       htmx.ajax('GET', '/app/user/requests', '#app-content');
     } else {
       window.toast(data.error || "Xatolik", 'error');
-      if (btn) btn.disabled = false;
+      if (btn) {
+        btn.disabled = false;
+        if (btn.dataset.label) btn.innerHTML = btn.dataset.label;
+      }
     }
   } catch(e) {
     window.toast("Xato: " + e.message, 'error');
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      if (btn.dataset.label) btn.innerHTML = btn.dataset.label;
+    }
   }
 }
 
@@ -120,17 +131,19 @@ function fmtHours(min: number): string {
   return m === 0 ? `${h} soat` : `${h} soat ${m} daqiqa`;
 }
 
-export const UserDayView: FC<{ date?: string; start?: string }> = async ({ date, start }) => {
-  const dateStr = date || new Date().toISOString().slice(0, 10);
-  const dateObj = new Date(dateStr);
-  const displayDate = dateObj.toLocaleDateString('uz-UZ', { weekday: 'long', day: 'numeric', month: 'long' });
+export const UserDayView: FC<{ date?: string; start?: string }> = async (
+  { date, start },
+) => {
+  const dateStr = date || toYmd(new Date());
+  const dateObj = dateFromYmd(dateStr);
+  const displayDate = formatUzLongDate(dateObj);
 
   let dayData;
   let settings = await getSettings();
   try {
     dayData = await getDayAvailability(dateStr);
   } catch {
-    dayData = { slots: [], openTime: '08:00', closeTime: '23:00' };
+    dayData = { slots: [], openTime: "08:00", closeTime: "23:00" };
   }
   const minDur = settings?.minDurMin ?? 60;
   const maxDur = settings?.maxDurMin ?? 180;
@@ -142,8 +155,11 @@ export const UserDayView: FC<{ date?: string; start?: string }> = async ({ date,
     const startTime = dayData.slots[i].start;
     const ends: string[] = [];
     for (let j = i; j < dayData.slots.length && !dayData.slots[j].isBusy; j++) {
-      const duration = timeToMinutes(dayData.slots[j].end) - timeToMinutes(startTime);
-      if (duration >= minDur && duration <= maxDur) ends.push(dayData.slots[j].end);
+      const duration = timeToMinutes(dayData.slots[j].end) -
+        timeToMinutes(startTime);
+      if (duration >= minDur && duration <= maxDur) {
+        ends.push(dayData.slots[j].end);
+      }
       if (duration >= maxDur) break;
     }
     if (ends.length > 0) slotMap[startTime] = ends;
@@ -163,79 +179,131 @@ export const UserDayView: FC<{ date?: string; start?: string }> = async ({ date,
         <input type="hidden" id="bookDate" value={dateStr} />
 
         {/* Shown only if the bot-onboarding gate blocks booking (checked client-side) */}
-        <div id="inactiveNotice" class="hidden p-4 bg-crm-warningSoft border border-crm-warning/30 rounded-[18px] flex items-start gap-3 gsap-stagger">
+        <div
+          id="inactiveNotice"
+          class="hidden p-4 bg-crm-warningSoft rounded-[20px] shadow-soft flex items-start gap-3 gsap-stagger"
+        >
           <div class="w-8 h-8 rounded-full bg-crm-warning/20 flex items-center justify-center shrink-0">
             <Icon name="bell" class="w-4 h-4 text-crm-warning" />
           </div>
           <p class="text-[13px] text-crm-textMain leading-relaxed">
-            Band qilishdan oldin ro'yxatdan o'tishni yakunlang: Telegram botga qayting va <b>/start</b> bosing, telefon raqamingizni yuboring va ismingizni yozing.
+            Band qilishdan oldin ro'yxatdan o'tishni yakunlang: Telegram botga
+            qayting va <b>/start</b>{" "}
+            bosing, telefon raqamingizni yuboring va ismingizni yozing.
           </p>
         </div>
 
         <div id="bookingForm" class="space-y-5">
+          {/* Time selection */}
+          <Card class="gsap-stagger">
+            <h2 class="text-[15px] font-bold px-1 mb-1">Vaqtni tanlang</h2>
+            <p class="text-[12px] text-crm-textMuted px-1 -mt-1 mb-1">
+              Har bir bron {fmtHours(minDur)} dan {fmtHours(maxDur)}{" "}
+              gacha bo'lishi mumkin
+            </p>
 
-        {/* Time selection */}
-        <Card class="gsap-stagger">
-          <h2 class="text-[15px] font-bold px-1 mb-1">Vaqtni tanlang</h2>
-          <p class="text-[12px] text-crm-textMuted px-1 -mt-1 mb-1">Har bir bron {fmtHours(minDur)} dan {fmtHours(maxDur)} gacha bo'lishi mumkin</p>
-
-          <div class="flex items-center gap-3 bg-crm-surfaceSoft rounded-[16px] p-3">
-            <div class="flex-1">
-              <span class="block text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide mb-1">Boshlanish</span>
-              <select id="bookStart" onchange="updateEnds()" disabled={startOptions.length === 0} class="w-full h-[44px] bg-crm-surface rounded-[12px] px-3 font-bold text-[16px] tabular-nums border border-crm-borderSoft">
-                {startOptions.length > 0
-                  ? startOptions.map((s) => (
-                      <option value={s} selected={s === selectedStart}>{s}</option>
+            <div class="flex items-center gap-3 bg-crm-surfaceSoft rounded-[16px] p-3">
+              <div class="flex-1">
+                <label
+                  for="bookStart"
+                  class="block text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide mb-1"
+                >
+                  Boshlanish
+                </label>
+                <select
+                  id="bookStart"
+                  onchange="updateEnds()"
+                  disabled={startOptions.length === 0}
+                  class="w-full h-[46px] bg-crm-surface rounded-[12px] px-3 font-bold text-[16px] tabular-nums border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                >
+                  {startOptions.length > 0
+                    ? startOptions.map((s) => (
+                      <option value={s} selected={s === selectedStart}>
+                        {s}
+                      </option>
                     ))
-                  : <option value="">Bo'sh vaqt yo'q</option>}
-              </select>
+                    : <option value="">Bo'sh vaqt yo'q</option>}
+                </select>
+              </div>
+              <div class="text-crm-textMuted mt-4 text-lg font-bold">—</div>
+              <div class="flex-1">
+                <label
+                  for="bookEnd"
+                  class="block text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide mb-1"
+                >
+                  Tugash
+                </label>
+                <select
+                  id="bookEnd"
+                  disabled={endOptions.length === 0}
+                  class="w-full h-[46px] bg-crm-surface rounded-[12px] px-3 font-bold text-[16px] tabular-nums border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                >
+                  {endOptions.length > 0
+                    ? endOptions.map((e) => <option value={e}>{e}</option>)
+                    : <option value="">—</option>}
+                </select>
+              </div>
             </div>
-            <div class="text-crm-textMuted mt-4 text-lg font-bold">—</div>
-            <div class="flex-1">
-              <span class="block text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide mb-1">Tugash</span>
-              <select id="bookEnd" disabled={endOptions.length === 0} class="w-full h-[44px] bg-crm-surface rounded-[12px] px-3 font-bold text-[16px] tabular-nums border border-crm-borderSoft">
-                {endOptions.length > 0
-                  ? endOptions.map((e) => <option value={e}>{e}</option>)
-                  : <option value="">—</option>}
-              </select>
-            </div>
-          </div>
-          <p id="durationHint" class="text-[12px] font-semibold text-crm-primary px-1">
-            {endOptions.length > 0 ? '' : "Bu sana uchun bo'sh vaqt yo'q"}
-          </p>
-        </Card>
+            <p
+              id="durationHint"
+              class="text-[12px] font-semibold text-crm-primary px-1"
+            >
+              {endOptions.length > 0 ? "" : "Bu sana uchun bo'sh vaqt yo'q"}
+            </p>
+          </Card>
 
-        {/* Contact info */}
-        <Card class="gsap-stagger">
-          <h2 class="text-[15px] font-bold px-1 mb-1">Aloqa ma'lumotlari</h2>
-          <div class="space-y-3">
-            <div>
-              <label class="block text-[12px] font-semibold text-crm-textMuted uppercase mb-1 px-1">Ismingiz</label>
-              <input type="text" id="bookName" placeholder="Masalan: Ali"
-                class="w-full h-[48px] bg-crm-surfaceSoft rounded-[14px] px-4 text-[15px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 transition" />
+          {/* Contact info */}
+          <Card class="gsap-stagger">
+            <h2 class="text-[15px] font-bold px-1 mb-1">Aloqa ma'lumotlari</h2>
+            <div class="space-y-3">
+              <div>
+                <label
+                  for="bookName"
+                  class="block text-[12px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                >
+                  Ismingiz
+                </label>
+                <input
+                  type="text"
+                  id="bookName"
+                  placeholder="Masalan: Ali"
+                  autocomplete="name"
+                  class="w-full h-[48px] bg-crm-surfaceSoft rounded-[14px] px-4 text-[15px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 transition-[box-shadow,border-color,background-color] duration-150 ease-out"
+                />
+              </div>
+              <div>
+                <label
+                  for="bookPhone"
+                  class="block text-[12px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                >
+                  Telefon raqam
+                </label>
+                <input
+                  type="tel"
+                  id="bookPhone"
+                  placeholder="+998 90 123 45 67"
+                  autocomplete="tel"
+                  class="w-full h-[48px] bg-crm-surfaceSoft rounded-[14px] px-4 text-[15px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 transition-[box-shadow,border-color,background-color] duration-150 ease-out tabular-nums"
+                />
+              </div>
             </div>
-            <div>
-              <label class="block text-[12px] font-semibold text-crm-textMuted uppercase mb-1 px-1">Telefon raqam</label>
-              <input type="tel" id="bookPhone" placeholder="+998 90 123 45 67"
-                class="w-full h-[48px] bg-crm-surfaceSoft rounded-[14px] px-4 text-[15px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 transition tabular-nums" />
-            </div>
-          </div>
-        </Card>
+          </Card>
 
-        {/* Submit */}
-        <button
-          id="submitBtn"
-          onclick="submitBooking()"
-          disabled={endOptions.length === 0}
-          class="w-full h-[52px] bg-crm-primary text-white rounded-[18px] font-bold text-[16px] shadow-floating active:scale-[0.96] transition-all duration-180 ease-out flex items-center justify-center gap-2 gsap-stagger disabled:opacity-40 disabled:pointer-events-none"
-        >
-          <Icon name="check" class="w-5 h-5" /> So'rov yuborish
-        </button>
-
+          {/* Submit */}
+          <button
+            id="submitBtn"
+            onclick="submitBooking()"
+            disabled={endOptions.length === 0}
+            class="w-full min-h-[52px] bg-crm-primary text-white rounded-[18px] font-bold text-[16px] shadow-floating tap-scale focus-ring flex items-center justify-center gap-2 gsap-stagger disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <Icon name="check" class="w-5 h-5" /> So'rov yuborish
+          </button>
         </div>
         <div class="h-4"></div>
       </div>
-      <script>{raw(bookingScript.replace('__SLOT_MAP__', JSON.stringify(slotMap)))}</script>
+      <script>
+        {raw(bookingScript.replace("__SLOT_MAP__", JSON.stringify(slotMap)))}
+      </script>
       <RoleBottomNav role="user" activeId="day" />
     </AppShell>
   );
