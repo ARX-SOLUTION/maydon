@@ -31,6 +31,12 @@ export async function notifyNewRequest(
 
   await bot.sendMessage(adminChatId, text, {
     parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: [[
+        { text: "✅ Tasdiqlash", callback_data: `confirm:${booking.id}` },
+        { text: "❌ Rad etish", callback_data: `reject:${booking.id}` },
+      ]],
+    },
   });
 }
 

@@ -3,6 +3,7 @@
  */
 
 import type { Admin, Booking, Recurring, Settings, User } from "./models.ts";
+import { roleFor } from "./models.ts";
 
 const KV_PATH = Deno.env.get("KV_PATH") ?? "maydon_kv";
 
@@ -43,6 +44,7 @@ export const keys = {
     ["pending_by_created", createdAt, id] as const,
   dayVersion: (date: string) => ["day_version", date] as const,
   recurring: (id: string) => ["recurring", id] as const,
+  inviteToken: (token: string) => ["invite_tokens", token] as const,
 };
 
 // ========== CRUD Helpers ==========
@@ -63,6 +65,27 @@ export async function getAdmin(telegramId: number): Promise<Admin | null> {
 
 export async function addAdmin(admin: Admin): Promise<void> {
   await kv.set(keys.admin(admin.telegramId), admin);
+}
+
+export async function isOwner(telegramId: number): Promise<boolean> {
+  const admin = await getAdmin(telegramId);
+  return admin?.role === "owner";
+}
+
+/**
+ * Backfill `role` on every stored admin from the single ownerRole rule. Idempotent:
+ * only writes when the role actually changes. Handles both admins created before the
+ * role field existed and ownership moving when ADMIN_TELEGRAM_ID changes.
+ */
+export async function migrateAdminRoles(ownerId: number | null): Promise<void> {
+  const entries = kv.list<Admin>({ prefix: ["admins"] });
+  for await (const entry of entries) {
+    const admin = entry.value;
+    const role = roleFor(admin.telegramId, ownerId);
+    if (admin.role !== role) {
+      await kv.set(keys.admin(admin.telegramId), { ...admin, role });
+    }
+  }
 }
 
 export async function getUser(telegramId: number): Promise<User | null> {
