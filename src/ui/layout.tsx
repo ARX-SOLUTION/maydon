@@ -2,53 +2,6 @@
 import { raw } from "hono/html";
 import type { FC } from "hono/jsx";
 
-const tailwindConfig = `
-tailwind.config = {
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-      },
-      colors: {
-        crm: {
-          bg: '#F8FAFC',
-          surface: '#FFFFFF',
-          surfaceSoft: '#F1F5FD',
-          primary: '#2563EB',
-          primarySoft: '#DBEAFE',
-          onPrimary: '#0F172A',
-          secondary: '#3B82F6',
-          accent: '#059669',
-          success: '#16A34A',
-          successSoft: '#DCFCE7',
-          warning: '#D97706',
-          warningSoft: '#FEF3C7',
-          danger: '#DC2626',
-          dangerSoft: '#FEE2E2',
-          textMain: '#0F172A',
-          textMuted: '#64748B',
-          borderSoft: '#E4ECFC',
-          muted: '#F1F5F9',
-        }
-      },
-      boxShadow: {
-        soft: '0 0 0 1px rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.08), 0 14px 32px rgba(37, 99, 235, 0.08)',
-        softHover: '0 0 0 1px rgba(37, 99, 235, 0.14), 0 8px 22px rgba(37, 99, 235, 0.12)',
-        floating: '0 12px 28px rgba(37, 99, 235, 0.20)',
-        glass: '0 4px 30px rgba(15, 23, 42, 0.07)',
-      },
-      borderRadius: {
-        '4xl': '24px',
-        '3xl': '18px',
-        '2xl': '16px',
-      },
-      zIndex: {
-        60: '60',
-      }
-    }
-  }
-};`;
-
 const inlineStyles = `
 :root {
   -webkit-font-smoothing: antialiased;
@@ -216,16 +169,28 @@ export const Layout: FC = ({ children }) => (
         content="width=device-width, initial-scale=1.0, viewport-fit=cover"
       />
       <title>Maydon Booking</title>
+      {/* Precompiled Tailwind (deno task build:css) — replaces the in-browser
+          cdn.tailwindcss.com compiler, which recompiled CSS on every HTMX DOM
+          swap and was the app's biggest slowdown. */}
+      <link rel="stylesheet" href="/static/app.css" />
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin="anonymous"
+      />
       <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet"
       />
       <script src="https://telegram.org/js/telegram-web-app.js"></script>
-      <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js">
+      {/* defer: non-blocking; the inline body script guards on window.gsap/htmx */}
+      <script defer src="https://unpkg.com/htmx.org@1.9.10"></script>
+      <script
+        defer
+        src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
+      >
       </script>
-      <script src="https://cdn.tailwindcss.com"></script>
-      <script>{raw(tailwindConfig)}</script>
       <style>{raw(inlineStyles)}</style>
     </head>
     <body class="antialiased min-h-screen">
