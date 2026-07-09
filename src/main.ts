@@ -101,6 +101,23 @@ app.get("/webhook/setup", async (c: any) => {
   }
 });
 
+// Auto-register the webhook on startup so it's always correct and self-healing —
+// no manual /webhook/setup needed. Only runs on Deno Deploy (DENO_DEPLOYMENT_ID is
+// set there) so local dev never touches the production webhook, and only when the
+// public URL is known (MINI_APP_URL). No drop_pending_updates: we must not lose
+// updates that arrived during a cold start.
+const publicUrl = Deno.env.get("MINI_APP_URL");
+if (Deno.env.get("DENO_DEPLOYMENT_ID") && publicUrl) {
+  const webhookUrl = `${publicUrl.replace(/\/$/, "")}/webhook`;
+  bot.api
+    .setWebhook(webhookUrl, {
+      secret_token: webhookSecret,
+      allowed_updates: ["message", "callback_query"],
+    })
+    .then(() => console.log("Webhook auto-registered:", webhookUrl))
+    .catch((e) => console.error("Webhook auto-registration failed:", e));
+}
+
 // Health check
 app.get("/health", (c) => c.text("OK"));
 
