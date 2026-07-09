@@ -5,6 +5,7 @@
 import { Hono } from "hono";
 import { authMiddleware, requireAdmin } from "../auth.ts";
 import {
+  getAllRecurring,
   getPendingRequests,
   getSettings,
   getUser,
@@ -17,7 +18,11 @@ import {
   createBooking,
   rejectBooking,
 } from "../services/booking.ts";
-import { createRecurring, deleteRecurring } from "../services/recurring.ts";
+import {
+  createRecurring,
+  deleteRecurring,
+  setRecurringActive,
+} from "../services/recurring.ts";
 
 const api = new Hono();
 
@@ -119,16 +124,24 @@ api.post("/admin/bookings/:id/cancel", async (c: any) => {
 
 // GET /api/admin/recurring
 api.get("/admin/recurring", async (c: any) => {
-  // TODO: Implement get all recurring
-  return c.json({ recurring: [] });
+  const recurring = await getAllRecurring();
+  recurring.sort((a, b) =>
+    a.dayOfWeek - b.dayOfWeek ||
+    a.startTime.localeCompare(b.startTime) ||
+    a.clientName.localeCompare(b.clientName)
+  );
+  return c.json({ recurring });
 });
 
 // POST /api/admin/recurring
 api.post("/admin/recurring", async (c: any) => {
-  const { dayOfWeek, startTime, endTime, clientName, phone } =
-    await c.req.json();
+  const { dayOfWeek, startTime, endTime, clientName, phone } = await c.req
+    .json();
 
-  if (!dayOfWeek || !startTime || !endTime || !clientName || !phone) {
+  if (
+    dayOfWeek === undefined || dayOfWeek === null || !startTime || !endTime ||
+    !clientName || !phone
+  ) {
     return c.json({ error: "Missing required fields" }, 400);
   }
 
@@ -149,6 +162,17 @@ api.delete("/admin/recurring/:id", async (c: any) => {
   const mode = c.req.query("mode") ?? "series";
   await deleteRecurring(id, mode as "week" | "series");
   return c.json({ success: true });
+});
+
+// POST /api/admin/recurring/:id/active
+api.post("/admin/recurring/:id/active", async (c: any) => {
+  const id = c.req.param("id");
+  const { active } = await c.req.json();
+  const result = await setRecurringActive(id, Boolean(active));
+  if (!result.success) {
+    return c.json({ error: result.error }, 404);
+  }
+  return c.json(result);
 });
 
 // GET /api/admin/settings
