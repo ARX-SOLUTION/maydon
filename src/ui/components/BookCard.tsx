@@ -36,7 +36,6 @@ export const UserBookCard: FC<{ date?: string; start?: string }> = ({ date, star
             <form 
               hx-post="/api/requests" 
               hx-swap="none"
-              onsubmit="closeBookCard()"
               class="space-y-4"
             >
               <input type="hidden" name="date" value={date} />
@@ -119,6 +118,7 @@ export const UserBookCard: FC<{ date?: string; start?: string }> = ({ date, star
             document.body.addEventListener('htmx:afterRequest', function(evt) {
               if (evt.detail.elt.tagName === 'FORM' && evt.detail.successful) {
                  window.toast("So'rov yuborildi!", "success");
+                 window.closeBookCard();
                  setTimeout(function() {
                     // refresh week view
                     htmx.ajax('GET', '/app/user/week?date=${date}', '#app-content');

@@ -1,4 +1,4 @@
-# BRIEFING — 2026-07-10T00:51:00+05:00
+# BRIEFING — 2026-07-10T01:06:00+05:00
 
 ## Mission
 Implement Milestone 1 (m1_e2e_tests) - Create the TDD test suite for the booking cancellation and no-show system (R3).
@@ -27,20 +27,26 @@ Implement Milestone 1 (m1_e2e_tests) - Create the TDD test suite for the booking
 - **Code layout**: `/Users/admin/Developer/Projects/maydon/.agents/orchestrator/PROJECT.md`
 
 ## Key Decisions Made
-- [TBD]
+- Use isolated temporary Deno KV instance in tests by configuring a unique `KV_PATH` before importing `./kv.ts`.
+- Fix pre-existing compilation errors in `src/ui/pages/admin/Users.tsx` to enable successful type checking of the project.
 
 ## Artifact Index
 - /Users/admin/Developer/Projects/maydon/.agents/worker_m1_e2e/handoff.md — Handoff report detailing findings and test execution results.
 
 ## Change Tracker
-- **Files modified**: None yet
-- **Build status**: TBD
-- **Pending issues**: TBD
+- **Files modified**:
+  - `src/cancellation_test.ts` (created - TDD cancellation tests)
+  - `src/services/booking.ts` (modified - updated `cancelBooking` signature to match spec)
+  - `src/services/notify.ts` (modified - added `notifyUserCancelled` stub)
+  - `src/bot/decisions.ts` (modified - added `notifyUserCancellation` wrapper)
+  - `src/ui/pages/admin/Users.tsx` (modified - fixed pre-existing layout prop compile errors)
+- **Build status**: Compiles successfully (`deno check` passed). Tests run with 15 passing, 5 failing (cancellation stubs fail as expected).
+- **Pending issues**: Backend cancellation logic needs to be fully implemented in Milestone 2.
 
 ## Quality Status
-- **Build/test result**: TBD
-- **Lint status**: TBD
-- **Tests added/modified**: TBD
+- **Build/test result**: Type check passes. Tests: 15 pass, 5 fail.
+- **Lint status**: Not run.
+- **Tests added/modified**: 13 tests added covering Tiers 1-4.
 
 ## Loaded Skills
-- None loaded yet.
+- None loaded.

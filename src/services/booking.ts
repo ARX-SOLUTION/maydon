@@ -242,16 +242,38 @@ export async function rejectBooking(id: string): Promise<void> {
   });
 }
 
-export async function cancelBooking(id: string): Promise<void> {
+export async function cancelBooking(
+  id: string,
+): Promise<{ success: boolean; error?: string; booking?: Booking }> {
   const booking = await kv.get<Booking>(keys.booking(id));
-  if (!booking.value) return;
+  if (!booking.value) {
+    return { success: false, error: "Booking not found" };
+  }
 
   const b = booking.value;
-  await kv.set(keys.booking(id), {
+  if (b.status === "cancelled") {
+    return { success: false, error: "Booking is already cancelled" };
+  }
+  if (b.status === "completed") {
+    return { success: false, error: "Cannot cancel completed bookings" };
+  }
+
+  const updated: Booking = {
     ...b,
     status: "cancelled",
     decidedAt: new Date().toISOString(),
-  });
+  };
+
+  const ok = await kv.atomic()
+    .check(booking)
+    .set(keys.booking(id), updated)
+    .commit();
+
+  if (!ok.ok) {
+    return { success: false, error: "Failed to cancel due to concurrent update" };
+  }
+
+  return { success: true, booking: updated };
 }
 
 // ========== Create Booking ==========

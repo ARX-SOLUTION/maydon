@@ -130,3 +130,13 @@ export async function notifySlotAvailable(
 
   await bot.sendMessage(adminChatId, text);
 }
+
+export async function notifyUserCancelled(
+  bot: BotContext,
+  userId: number,
+  booking: Booking,
+): Promise<void> {
+  // Stub: Not implemented yet (TDD Red Phase)
+  throw new Error("notifyUserCancelled not implemented yet");
+}
+

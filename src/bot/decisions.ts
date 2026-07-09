@@ -22,6 +22,7 @@ import {
 } from "../services/availability.ts";
 import {
   notifyNewRequest,
+  notifyUserCancelled,
   notifyUserConfirmed,
   notifyUserQueued,
   notifyUserRejected,
@@ -237,4 +238,10 @@ export async function notifyUserRejection(
     reason,
     alternativeSlots,
   );
+}
+
+// Notify user about cancellation
+export async function notifyUserCancellation(booking: Booking): Promise<void> {
+  if (!booking.userId) return;
+  await notifyUserCancelled(botContext, booking.userId, booking);
 }

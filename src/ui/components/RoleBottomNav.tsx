@@ -37,8 +37,14 @@ const adminNav: NavItem[] = [
     icon: "settings",
     href: "/app/admin/settings",
   },
+  {
+    id: "users",
+    label: "Mijozlar",
+    icon: "users",
+    href: "/app/admin/users",
+  },
   // owner-only — hidden by default, revealed by the reveal script below
-  { id: "admins", label: "Adminlar", icon: "users", href: "/app/admin/admins" },
+  { id: "admins", label: "Adminlar", icon: "profile", href: "/app/admin/admins" },
 ];
 
 const userNav: NavItem[] = [

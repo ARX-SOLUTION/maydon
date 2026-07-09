@@ -97,6 +97,14 @@ export async function upsertUser(user: User): Promise<void> {
   await kv.set(keys.user(user.telegramId), user);
 }
 
+export async function getAllUsers(): Promise<User[]> {
+  const users: User[] = [];
+  for await (const entry of kv.list<User>({ prefix: ["user"] })) {
+    users.push(entry.value);
+  }
+  return users;
+}
+
 export async function getBooking(id: string): Promise<Booking | null> {
   const res = await kv.get<Booking>(keys.booking(id));
   return res.value;

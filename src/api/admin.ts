@@ -10,6 +10,8 @@ import {
   getPendingRequests,
   getSettings,
   getUser,
+  getAllUsers,
+  getBookingsByUser,
   keys,
   kv,
   upsertSettings,
@@ -196,8 +198,29 @@ api.put("/admin/settings", async (c: any) => {
   return c.json({ success: true });
 });
 
-// POST /api/admin/users/:id/block
-api.post("/admin/users/:id/block", async (c: any) => {
+// GET /api/admin/users
+api.get("/admin/users", async (c: any) => {
+  const users = await getAllUsers();
+  
+  // Calculate reputation
+  const reputationData = await Promise.all(
+    users.map(async (user) => {
+      const bookings = await getBookingsByUser(user.telegramId);
+      const totalBookings = bookings.length;
+      const noShows = bookings.filter((b) => b.status === "cancelled").length;
+      return {
+        ...user,
+        totalBookings,
+        noShows,
+      };
+    })
+  );
+
+  return c.json(reputationData);
+});
+
+// POST /api/admin/users/:id/toggle-block
+api.post("/admin/users/:id/toggle-block", async (c: any) => {
   const telegramId = parseInt(c.req.param("id"));
 
   let user = await getUser(telegramId);
@@ -210,11 +233,11 @@ api.post("/admin/users/:id/block", async (c: any) => {
       createdAt: new Date().toISOString(),
     };
   } else {
-    user.isBlocked = true;
+    user.isBlocked = !user.isBlocked;
   }
 
   await upsertUser(user);
-  return c.json({ success: true });
+  return c.json({ success: true, isBlocked: user.isBlocked });
 });
 
 // ========== Admin management (owner-only) ==========

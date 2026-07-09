@@ -10,6 +10,7 @@ import { AdminRecurring } from "./pages/admin/Recurring.tsx";
 import { AdminSettings } from "./pages/admin/Settings.tsx";
 import { UserProfile } from "./pages/user/Profile.tsx";
 import { AdminAdmins } from "./pages/admin/Admins.tsx";
+import { AdminUsers } from "./pages/admin/Users.tsx";
 import { Layout } from "./layout.tsx";
 import { authMiddleware } from "../auth.ts";
 
@@ -57,6 +58,7 @@ uiRouter.get(
   (c) => c.html(<AdminSchedule selectedDate={c.req.query("date")} />),
 );
 uiRouter.get("/admin/recurring", (c) => c.html(<AdminRecurring />));
+uiRouter.get("/admin/users", (c) => c.html(<AdminUsers />));
 uiRouter.get("/admin/settings", (c) => c.html(<AdminSettings />));
 uiRouter.get("/admin/admins", (c) => c.html(<AdminAdmins />));
 

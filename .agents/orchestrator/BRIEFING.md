@@ -51,18 +51,19 @@ Plan, manage, and complete the implementation of the booking cancellation/no-sho
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
 | explorer_1 | teamwork_preview_explorer | Explore codebase & propose cancellation design | completed | 586062a5-99ec-4d57-9ca8-dde5e27c8a46 |
-| worker_m1_e2e | teamwork_preview_worker | Write TDD tests in cancellation_test.ts | in-progress | 46cdb294-44fa-4512-9c80-74ff5dc9fabf |
+| worker_m1_e2e | teamwork_preview_worker | Write TDD tests in cancellation_test.ts | completed | 46cdb294-44fa-4512-9c80-74ff5dc9fabf |
+| worker_m2_backend | teamwork_preview_worker | Implement backend cancellation service, API & bot notifications | in-progress | e7934c41-beea-4a02-982c-750f36afe93a |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 2 / 16
-- Pending subagents: 46cdb294-44fa-4512-9c80-74ff5dc9fabf
+- Spawn count: 3 / 16
+- Pending subagents: e7934c41-beea-4a02-982c-750f36afe93a
 - Predecessor: none
 - Successor: not yet spawned
 
 ## Active Timers
 - Heartbeat cron: d018181c-a215-42cf-9efc-d0e17ec0b00b/task-29
-- Safety timer: d018181c-a215-42cf-9efc-d0e17ec0b00b/task-56
+- Safety timer: d018181c-a215-42cf-9efc-d0e17ec0b00b/task-77
 
 ## Artifact Index
 - /Users/admin/Developer/Projects/maydon/.agents/orchestrator/ORIGINAL_REQUEST.md — Original user request
