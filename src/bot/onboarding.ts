@@ -41,7 +41,11 @@ async function sendOnboardingPrompt(ctx: any, user: User): Promise<void> {
 
 export function registerOnboarding(): void {
   // /start command
-  bot.command("start", async (ctx: any) => {
+  bot.command("start", async (ctx: any, next: () => Promise<void>) => {
+    // Deep-link payloads (e.g. /start admin_<token> invites) are handled by other
+    // modules; plain /start runs onboarding. No payloads exist until ticket #11.
+    if ((ctx.match ?? "").trim()) return await next();
+
     const userId = ctx.from?.id;
     if (!userId) return;
 
