@@ -38,8 +38,10 @@ await initDefaultSettings();
 
 // Add first admin from env (for bootstrap) as the owner, preserving their existing
 // name/addedAt if already present so a restart doesn't reset them.
-const adminId = Deno.env.get("ADMIN_TELEGRAM_ID");
-const ownerId = adminId ? parseInt(adminId) : null;
+// Trim + validate so a stray space or typo in the env var can't create a broken
+// admin (parseInt("abc") = NaN); only a clean numeric id becomes the owner.
+const adminId = Deno.env.get("ADMIN_TELEGRAM_ID")?.trim();
+const ownerId = adminId && /^\d+$/.test(adminId) ? parseInt(adminId, 10) : null;
 if (ownerId !== null) {
   const existing = await getAdmin(ownerId);
   await addAdmin({
