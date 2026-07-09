@@ -29,3 +29,7 @@ dist-ssr
 *storybook.log
 storybook-static/
 .vercel
+
+# Secrets — never commit
+.env
+generated/
