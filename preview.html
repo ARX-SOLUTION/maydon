@@ -1,0 +1,1502 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Maydon Booking — Single Page Prototype</title>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f8ee;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --ink: #152015;
+      --muted: #607064;
+      --line: rgba(21, 32, 21, 0.11);
+      --brand: #1e7d42;
+      --brand-2: #75c54d;
+      --brand-soft: #e8f7df;
+      --danger: #d64b4b;
+      --warning: #d88b25;
+      --info: #327ad9;
+      --confirmed: #202b25;
+      --pending: #ffedd5;
+      --rejected: #fee2e2;
+      --shadow: 0 24px 80px rgba(20, 45, 23, 0.14);
+      --shadow-soft: 0 14px 44px rgba(20, 45, 23, 0.09);
+      --radius-xl: 30px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(117, 197, 77, .25), transparent 34rem),
+        radial-gradient(circle at 84% 12%, rgba(30, 125, 66, .18), transparent 30rem),
+        linear-gradient(135deg, #f9fbf3 0%, var(--bg) 44%, #edf5e6 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(21,32,21,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(21,32,21,.04) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), transparent 72%);
+      z-index: -2;
+    }
+
+    button, input, select { font: inherit; }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      transition: transform .22s var(--ease), box-shadow .22s var(--ease), background .22s var(--ease), color .22s var(--ease), border-color .22s var(--ease);
+    }
+
+    button:active { transform: scale(.98); }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 3px solid rgba(117,197,77,.5);
+      outline-offset: 3px;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 18px 0 34px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 12px;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,.7);
+      background: rgba(255,255,255,.72);
+      backdrop-filter: blur(18px);
+      border-radius: 24px;
+      box-shadow: 0 10px 40px rgba(20,45,23,.08);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 15px;
+      background: linear-gradient(145deg, #1e7d42, #75c54d);
+      color: white;
+      box-shadow: inset 0 -10px 22px rgba(0,0,0,.12), 0 10px 20px rgba(30,125,66,.24);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.05;
+      letter-spacing: -.03em;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill,
+    .ghost,
+    .primary,
+    .danger,
+    .tiny {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+      border-radius: 999px;
+      font-weight: 760;
+      letter-spacing: -.01em;
+    }
+
+    .pill, .ghost {
+      min-height: 40px;
+      padding: 0 14px;
+      background: rgba(255,255,255,.75);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .ghost:hover, .pill:hover { box-shadow: var(--shadow-soft); transform: translateY(-1px); }
+
+    .primary {
+      min-height: 44px;
+      padding: 0 16px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), #41a947);
+      box-shadow: 0 12px 26px rgba(30,125,66,.25);
+    }
+
+    .primary:hover { transform: translateY(-2px); box-shadow: 0 16px 34px rgba(30,125,66,.31); }
+
+    .danger {
+      min-height: 40px;
+      padding: 0 13px;
+      color: #fff;
+      background: linear-gradient(135deg, #d64b4b, #f07676);
+      box-shadow: 0 10px 22px rgba(214,75,75,.2);
+    }
+
+    .tiny {
+      min-height: 32px;
+      padding: 0 11px;
+      font-size: 12px;
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .tiny.success { background: var(--brand); color: #fff; border-color: transparent; }
+    .tiny.warn { background: #fff7ed; color: #a44d0a; }
+    .tiny.red { background: #fff1f2; color: #b42331; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap: 18px;
+      margin: 20px 0 18px;
+      align-items: stretch;
+    }
+
+    .hero-card,
+    .panel,
+    .metric,
+    .booking-card,
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,.7);
+      backdrop-filter: blur(18px);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      position: relative;
+      overflow: hidden;
+      padding: 28px;
+      min-height: 302px;
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      border-radius: 999px;
+      right: -120px;
+      top: -130px;
+      background: radial-gradient(circle, rgba(117,197,77,.34), rgba(30,125,66,.04) 60%, transparent 70%);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(232,247,223,.8);
+      color: #256b31;
+      border: 1px solid rgba(30,125,66,.11);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .hero h2 {
+      margin: 0;
+      max-width: 620px;
+      font-size: clamp(34px, 7vw, 64px);
+      line-height: .92;
+      letter-spacing: -.075em;
+      text-wrap: balance;
+    }
+
+    .hero h2 span { color: var(--brand); }
+
+    .hero-text {
+      margin: 16px 0 22px;
+      max-width: 590px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+      text-wrap: pretty;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mini-phone {
+      overflow: hidden;
+      padding: 14px;
+      min-height: 302px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: rgba(16, 24, 20, .9);
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), var(--shadow);
+    }
+
+    .phone-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #dfffe0;
+      font-size: 12px;
+      padding: 4px 4px 0;
+    }
+
+    .phone-card {
+      border-radius: 24px;
+      background: #f7faef;
+      padding: 16px;
+      min-height: 230px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.8);
+    }
+
+    .phone-card h3 { margin: 0 0 10px; letter-spacing: -.04em; }
+
+    .phone-slots {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .phone-slot {
+      min-height: 54px;
+      padding: 10px;
+      border-radius: 16px;
+      background: white;
+      border: 1px solid rgba(21,32,21,.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      font-weight: 800;
+      box-shadow: 0 8px 20px rgba(20,45,23,.07);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .phone-slot small { color: var(--muted); font-weight: 700; }
+    .phone-slot.busy { background: #222c26; color: white; }
+    .phone-slot.pending { background: var(--pending); color: #7c4100; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .metric {
+      padding: 17px;
+      border-radius: 24px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 28px;
+      line-height: 1;
+      letter-spacing: -.055em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tabs-wrap {
+      position: sticky;
+      top: 82px;
+      z-index: 40;
+      margin: 0 0 16px;
+      padding: 8px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(255,255,255,.72);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 10px 30px rgba(20,45,23,.07);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .tabs-wrap::-webkit-scrollbar { display: none; }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      min-width: max-content;
+    }
+
+    .tab {
+      position: relative;
+      padding: 11px 14px;
+      border-radius: 16px;
+      color: var(--muted);
+      background: transparent;
+      font-weight: 840;
+      font-size: 14px;
+    }
+
+    .tab.active {
+      background: #172018;
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(21,32,21,.18);
+    }
+
+    .admin-only { display: none; }
+    body.admin-mode .admin-only { display: inline-flex; }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .view-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 18px;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .panel h3 {
+      margin: 0;
+      font-size: 19px;
+      letter-spacing: -.04em;
+      text-wrap: balance;
+    }
+
+    .panel-sub {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(118px, 1fr));
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .day-column {
+      min-width: 118px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.66);
+      border: 1px solid var(--line);
+      padding: 10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+    }
+
+    .day-column.today {
+      background: linear-gradient(180deg, rgba(232,247,223,.92), rgba(255,255,255,.7));
+      border-color: rgba(30,125,66,.18);
+    }
+
+    .day-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+
+    .day-title strong { font-size: 13px; letter-spacing: -.02em; }
+    .day-title span { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+    .slot-stack { display: grid; gap: 6px; }
+
+    .slot-btn {
+      width: 100%;
+      min-height: 34px;
+      justify-content: flex-start;
+      padding: 8px 9px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid rgba(21,32,21,.08);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 830;
+      font-variant-numeric: tabular-nums;
+      box-shadow: 0 6px 14px rgba(20,45,23,.05);
+    }
+
+    .slot-btn:hover:not(.busy) {
+      background: var(--brand-soft);
+      border-color: rgba(30,125,66,.17);
+      transform: translateY(-1px);
+    }
+
+    .slot-btn.busy {
+      color: #fff;
+      background: linear-gradient(135deg, #172018, #354238);
+      cursor: not-allowed;
+      opacity: .92;
+    }
+
+    .slot-btn.pending {
+      background: #fff7ed;
+      color: #8a4b10;
+      border-color: rgba(216,139,37,.18);
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+      margin-right: 5px;
+      vertical-align: -1px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .dot.busy { background: var(--confirmed); }
+    .dot.pending { background: #f59e0b; border-color: transparent; }
+    .dot.free { background: #fff; }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 8px;
+    }
+
+    .time-row {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      align-items: stretch;
+      gap: 10px;
+      min-height: 44px;
+    }
+
+    .time-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 780;
+      padding-top: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .time-cell {
+      border: 1px dashed rgba(21,32,21,.13);
+      background: rgba(255,255,255,.58);
+      border-radius: 14px;
+      padding: 9px 11px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .time-cell.free:hover {
+      border-style: solid;
+      border-color: rgba(30,125,66,.28);
+      background: var(--brand-soft);
+    }
+
+    .time-cell.busy {
+      color: white;
+      border-color: transparent;
+      background: linear-gradient(135deg, #18221b, #334037);
+      box-shadow: 0 12px 24px rgba(20,45,23,.14);
+    }
+
+    .side-list { display: grid; gap: 10px; }
+
+    .notice {
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(232,247,223,.82);
+      border: 1px solid rgba(30,125,66,.12);
+      color: #245d31;
+      font-size: 13px;
+      line-height: 1.5;
+      font-weight: 700;
+    }
+
+    .booking-card {
+      position: relative;
+      overflow: hidden;
+      padding: 14px;
+      border-radius: 22px;
+      display: grid;
+      gap: 10px;
+      box-shadow: 0 10px 24px rgba(20,45,23,.07);
+    }
+
+    .booking-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 14px;
+      bottom: 14px;
+      width: 4px;
+      border-radius: 999px;
+      background: var(--brand);
+    }
+
+    .booking-card.pending::before { background: var(--warning); }
+    .booking-card.rejected::before { background: var(--danger); }
+    .booking-card.completed::before { background: var(--muted); }
+
+    .card-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .booking-card strong {
+      font-size: 15px;
+      letter-spacing: -.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .booking-card small {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 720;
+      line-height: 1.4;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status.confirmed { color: #fff; background: var(--brand); }
+    .status.pending { color: #934b00; background: #ffedd5; }
+    .status.rejected { color: #b42331; background: #fee2e2; }
+    .status.completed { color: #475569; background: #e2e8f0; }
+    .status.cancelled { color: #7c2d12; background: #fed7aa; }
+
+    .request-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .request-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 13px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.76);
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 24px rgba(20,45,23,.06);
+    }
+
+    .queue-no {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 15px;
+      background: #fff7ed;
+      color: #9a4d05;
+      font-size: 14px;
+      font-weight: 930;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .request-main strong { display: block; letter-spacing: -.02em; }
+    .request-main span { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+
+    .request-actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+
+    .forms {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.82);
+      color: var(--ink);
+      font-weight: 740;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .setting-tile {
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.7);
+      border: 1px solid var(--line);
+    }
+
+    .setting-tile small {
+      display: block;
+      color: var(--muted);
+      font-weight: 760;
+      margin-bottom: 8px;
+    }
+
+    .setting-tile strong {
+      font-size: 22px;
+      letter-spacing: -.04em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      place-items: end center;
+      padding: 18px;
+      background: rgba(9, 15, 10, .36);
+      backdrop-filter: blur(10px);
+    }
+
+    .modal.show { display: grid; }
+
+    .modal-card {
+      width: min(520px, 100%);
+      padding: 20px;
+      border-radius: 30px;
+      background: rgba(255,255,255,.9);
+    }
+
+    .modal-card h3 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: -.05em;
+    }
+
+    .modal-card p {
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 8px 0 16px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .toast-wrap {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 120;
+      display: grid;
+      gap: 10px;
+      width: min(380px, calc(100% - 36px));
+      pointer-events: none;
+    }
+
+    .toast {
+      padding: 13px 14px;
+      border-radius: 18px;
+      background: rgba(23,32,24,.93);
+      color: #fff;
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      font-weight: 760;
+      line-height: 1.45;
+      pointer-events: auto;
+    }
+
+    .empty-state {
+      padding: 30px;
+      text-align: center;
+      color: var(--muted);
+      border-radius: 24px;
+      background: rgba(255,255,255,.56);
+      border: 1px dashed rgba(21,32,21,.14);
+      font-weight: 720;
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: 0 0 auto;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .hero, .view-grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 620px) {
+      .app { width: min(100% - 18px, 1180px); padding-top: 9px; }
+      .topbar { top: 8px; align-items: flex-start; border-radius: 21px; }
+      .brand p { max-width: 154px; }
+      .top-actions { gap: 6px; }
+      .pill, .ghost { min-height: 36px; padding: 0 10px; font-size: 13px; }
+      .hero-card { padding: 22px; border-radius: 26px; }
+      .mini-phone { min-height: auto; }
+      .stats { grid-template-columns: 1fr 1fr; gap: 9px; }
+      .metric { padding: 14px; border-radius: 20px; }
+      .metric strong { font-size: 23px; }
+      .tabs-wrap { top: 76px; border-radius: 20px; }
+      .panel { padding: 14px; border-radius: 25px; }
+      .forms, .settings-grid { grid-template-columns: 1fr; }
+      .request-item { grid-template-columns: auto 1fr; }
+      .request-actions { grid-column: 1 / -1; justify-content: stretch; }
+      .request-actions button { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar js-pop">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 10c2.8-4.4 13.2-4.4 16 0"/><path d="M5 15c3.2 3.6 10.8 3.6 14 0"/><path d="M12 4v16"/><path d="M4 12h16"/></svg>
+        </div>
+        <div>
+          <h1>Maydon Booking</h1>
+          <p>Telegram Mini App · Asia/Tashkent</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="pill" id="adminToggle" aria-pressed="false">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 5-3 8-7 9-4-1-7-4-7-9V7l7-4z"/><path d="M9 12l2 2 4-5"/></svg>
+          Admin rejim
+        </button>
+        <button class="primary" data-tab-target="day">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18"/></svg>
+          Vaqt tanlash
+        </button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-card js-rise">
+        <div class="eyebrow">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Narx/to‘lovsiz — sof jadval boshqaruvi
+        </div>
+        <h2>Bitta futbol maydoni uchun <span>tez, adolatli</span> booking oqimi.</h2>
+        <p class="hero-text">User bo‘sh vaqtni tanlaydi, so‘rov FIFO navbatga tushadi, admin Telegram orqali tasdiqlaydi yoki rad etadi. Confirmed bronlar overlap qilmaydi.</p>
+        <div class="hero-actions">
+          <button class="primary" id="openQuickRequest">So‘rov yuborish</button>
+          <button class="ghost" data-tab-target="requests">Admin so‘rovlarini ko‘rish</button>
+        </div>
+      </div>
+
+      <aside class="mini-phone js-rise" aria-label="Mini app preview">
+        <div class="phone-head"><strong>Mini App</strong><span>Bugun · 09 Jul</span></div>
+        <div class="phone-card">
+          <h3>Bugungi tez slotlar</h3>
+          <div class="phone-slots">
+            <button class="phone-slot" data-slot="10:00-11:30"><span>10:00</span><small>1.5 soat bo‘sh</small></button>
+            <button class="phone-slot busy"><span>12:00</span><small>Band</small></button>
+            <button class="phone-slot pending"><span>15:30</span><small>2 ta navbat</small></button>
+            <button class="phone-slot" data-slot="20:00-22:00"><span>20:00</span><small>2 soat bo‘sh</small></button>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="stats js-rise" aria-label="Booking summary">
+      <div class="metric"><span>Bugun confirmed</span><strong id="confirmedMetric">4</strong></div>
+      <div class="metric"><span>Pending navbat</span><strong id="pendingMetric">5</strong></div>
+      <div class="metric"><span>Ish vaqti</span><strong>08–23</strong></div>
+      <div class="metric"><span>Gorizont</span><strong>7 kun</strong></div>
+    </section>
+
+    <nav class="tabs-wrap js-rise" aria-label="Mini app screens">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="week">Hafta</button>
+        <button class="tab" data-tab="day">Kun</button>
+        <button class="tab" data-tab="my">Mening so‘rovlarim</button>
+        <button class="tab admin-only" data-tab="requests">So‘rovlar</button>
+        <button class="tab admin-only" data-tab="schedule">Jadval + qo‘lda bron</button>
+        <button class="tab admin-only" data-tab="recurring">Recurring</button>
+        <button class="tab admin-only" data-tab="settings">Sozlamalar</button>
+      </div>
+    </nav>
+
+    <main>
+      <section class="view active" id="view-week">
+        <div class="view-grid">
+          <div class="panel js-panel">
+            <div class="panel-head">
+              <div>
+                <h3>7 kunlik jadval</h3>
+                <p class="panel-sub">Confirmed bronlar kulrang. Oq slotlar bosilganda so‘rov modal ochiladi.</p>
+              </div>
+              <div class="legend">
+                <span><i class="dot free"></i>Bo‘sh</span>
+                <span><i class="dot busy"></i>Band</span>
+                <span><i class="dot pending"></i>Navbat bor</span>
+              </div>
+            </div>
+            <div class="week-grid" id="weekGrid"></div>
+          </div>
+          <aside class="panel js-panel">
+            <div class="panel-head"><div><h3>Bugungi muqobil vaqtlar</h3><p class="panel-sub">Rad etilganda userga yuboriladigan ro‘yxat namunasi.</p></div></div>
+            <div class="side-list" id="alternativesList"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-day">
+        <div class="view-grid">
+          <div class="panel js-panel">
+            <div class="panel-head">
+              <div>
+                <h3>Kun timeline — 30 daqiqa snap</h3>
+                <p class="panel-sub">1–3 soat oralig‘ida bo‘sh diapazon tanlash uchun slotni bosing.</p>
+              </div>
+              <button class="ghost" id="selectTwoHours">20:00–22:00 tanlash</button>
+            </div>
+            <div class="timeline" id="timeline"></div>
+          </div>
+          <aside class="panel js-panel">
+            <h3>Validatsiya qoidalari</h3>
+            <div class="side-list" style="margin-top:12px">
+              <div class="notice">Boshlanish/tugash :00 yoki :30 bo‘lishi kerak.</div>
+              <div class="notice">Minimal davomiylik — 1 soat, maksimal — 3 soat.</div>
+              <div class="notice">Bir userda bir vaqtda 3 tagacha faol pending so‘rov.</div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-my">
+        <div class="panel js-panel">
+          <div class="panel-head">
+            <div>
+              <h3>Mening so‘rovlarim</h3>
+              <p class="panel-sub">User o‘z statusi va navbatdagi o‘rnini shu yerda ko‘radi.</p>
+            </div>
+            <button class="primary" id="openMyRequest">Yangi so‘rov</button>
+          </div>
+          <div class="side-list" id="myBookings"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-requests">
+        <div class="panel js-panel">
+          <div class="panel-head">
+            <div>
+              <h3>Pending so‘rovlar — FIFO</h3>
+              <p class="panel-sub">created_at bo‘yicha navbat. Tasdiqlash overlap pendinglarni avtomatik rad etadi.</p>
+            </div>
+            <button class="ghost" id="simulateRequest">Demo so‘rov qo‘shish</button>
+          </div>
+          <div class="request-list" id="adminRequests"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-schedule">
+        <div class="view-grid">
+          <div class="panel js-panel">
+            <div class="panel-head"><div><h3>Admin jadvali</h3><p class="panel-sub">Bo‘sh joyga qo‘lda bron qo‘shish uchun forma ishlaydi.</p></div></div>
+            <div class="timeline" id="adminTimeline"></div>
+          </div>
+          <aside class="panel js-panel">
+            <h3>Qo‘lda bron</h3>
+            <div class="forms" style="grid-template-columns:1fr; margin-top:14px">
+              <div class="field"><label>Mijoz ismi</label><input id="manualName" value="Akmal aka" /></div>
+              <div class="field"><label>Telefon</label><input id="manualPhone" value="+998 90 123 45 67" /></div>
+              <div class="field"><label>Sana</label><input id="manualDate" type="date" /></div>
+              <div class="forms">
+                <div class="field"><label>Start</label><select id="manualStart"></select></div>
+                <div class="field"><label>End</label><select id="manualEnd"></select></div>
+              </div>
+              <button class="primary" id="addManualBooking">Confirmed bron qo‘shish</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-recurring">
+        <div class="panel js-panel">
+          <div class="panel-head">
+            <div><h3>Recurring mijozlar</h3><p class="panel-sub">Haftalik doimiy mijozlar gorizont ichida confirmed bronlarga aylantiriladi.</p></div>
+            <button class="primary" id="addRecurring">Recurring qo‘shish</button>
+          </div>
+          <div class="request-list" id="recurringList"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-settings">
+        <div class="panel js-panel">
+          <div class="panel-head">
+            <div><h3>Sozlamalar</h3><p class="panel-sub">MVP defaultlari: 08:00–23:00, 7 kun, 30 daqiqa snap.</p></div>
+            <button class="primary" id="saveSettings">Saqlash</button>
+          </div>
+          <div class="settings-grid">
+            <div class="setting-tile"><small>open_time</small><strong>08:00</strong></div>
+            <div class="setting-tile"><small>close_time</small><strong>23:00</strong></div>
+            <div class="setting-tile"><small>horizonDays</small><strong>7</strong></div>
+            <div class="setting-tile"><small>minDurMin</small><strong>60</strong></div>
+            <div class="setting-tile"><small>maxDurMin</small><strong>180</strong></div>
+            <div class="setting-tile"><small>snapMin</small><strong>30</strong></div>
+          </div>
+          <div class="forms" style="margin-top:16px">
+            <div class="field"><label>Yangi admin telegram_id</label><input value="777000111" /></div>
+            <div class="field"><label>Bloklangan user</label><input value="998001122" /></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="bookingModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="panel-head">
+        <div>
+          <h3 id="modalTitle">Booking so‘rovi</h3>
+          <p id="modalCopy">Tanlangan vaqt navbatga pending sifatida tushadi.</p>
+        </div>
+        <button class="tiny" id="closeModal" aria-label="Modalni yopish">Yopish</button>
+      </div>
+      <div class="forms">
+        <div class="field"><label>Sana</label><input id="modalDate" type="date" /></div>
+        <div class="field"><label>Telefon</label><input id="modalPhone" value="+998 99 555 44 33" /></div>
+        <div class="field"><label>Start</label><select id="modalStart"></select></div>
+        <div class="field"><label>End</label><select id="modalEnd"></select></div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" id="cancelModal">Bekor qilish</button>
+        <button class="primary" id="submitRequest">So‘rov yuborish</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+  <script>
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+    const state = {
+      admin: false,
+      selectedTab: 'week',
+      today: new Date('2026-07-09T00:00:00+05:00'),
+      settings: { open: 8, close: 23, horizon: 7, min: 60, max: 180, snap: 30 },
+      bookings: [
+        { id: 'b1', name: 'Rustam FC', phone: '+998 91 111 22 33', date: '2026-07-09', start: '09:00', end: '10:30', status: 'confirmed', source: 'user', queue: 0, createdAt: '2026-07-08T05:10:00Z' },
+        { id: 'b2', name: 'Lochinlar', phone: '+998 90 202 33 44', date: '2026-07-09', start: '12:00', end: '14:00', status: 'confirmed', source: 'admin', queue: 0, createdAt: '2026-07-08T05:50:00Z' },
+        { id: 'b3', name: 'Jasur', phone: '+998 93 444 55 66', date: '2026-07-09', start: '15:30', end: '17:00', status: 'pending', source: 'user', queue: 1, createdAt: '2026-07-09T03:08:00Z' },
+        { id: 'b4', name: 'Bekzod', phone: '+998 94 808 70 70', date: '2026-07-09', start: '15:30', end: '17:00', status: 'pending', source: 'user', queue: 2, createdAt: '2026-07-09T03:17:00Z' },
+        { id: 'b5', name: 'Sardor', phone: '+998 97 700 12 12', date: '2026-07-10', start: '18:00', end: '20:00', status: 'pending', source: 'user', queue: 1, createdAt: '2026-07-09T04:25:00Z' },
+        { id: 'b6', name: 'Veteranlar', phone: '+998 95 333 22 11', date: '2026-07-11', start: '20:00', end: '22:00', status: 'confirmed', source: 'recurring', queue: 0, createdAt: '2026-07-06T02:00:00Z' },
+        { id: 'b7', name: 'Azizbek', phone: '+998 99 010 77 77', date: '2026-07-12', start: '10:00', end: '11:00', status: 'pending', source: 'user', queue: 1, createdAt: '2026-07-09T05:11:00Z' },
+        { id: 'b8', name: 'Mening jamoam', phone: '+998 99 555 44 33', date: '2026-07-13', start: '21:00', end: '23:00', status: 'confirmed', source: 'user', queue: 0, createdAt: '2026-07-08T06:00:00Z' },
+        { id: 'b9', name: 'Mening jamoam', phone: '+998 99 555 44 33', date: '2026-07-14', start: '19:00', end: '20:30', status: 'pending', source: 'user', queue: 1, createdAt: '2026-07-09T05:30:00Z' }
+      ],
+      recurring: [
+        { id: 'r1', name: 'Veteranlar', phone: '+998 95 333 22 11', day: 'Shanba', start: '20:00', end: '22:00', active: true },
+        { id: 'r2', name: 'Chilonzor United', phone: '+998 90 414 14 14', day: 'Dushanba', start: '19:00', end: '21:00', active: true }
+      ]
+    };
+
+    const dayNames = ['Yak', 'Dush', 'Sesh', 'Chor', 'Pay', 'Jum', 'Shan'];
+    const iso = (date) => date.toISOString().slice(0, 10);
+    const pad = (n) => String(n).padStart(2, '0');
+    const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const minToTime = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+    const overlaps = (a, b) => a.date === b.date && timeToMin(a.start) < timeToMin(b.end) && timeToMin(a.end) > timeToMin(b.start);
+    const isBusy = (date, start, end) => state.bookings.some(b => b.date === date && b.status === 'confirmed' && timeToMin(start) < timeToMin(b.end) && timeToMin(end) > timeToMin(b.start));
+    const hasPending = (date, start, end) => state.bookings.some(b => b.date === date && b.status === 'pending' && timeToMin(start) < timeToMin(b.end) && timeToMin(end) > timeToMin(b.start));
+
+    function iconPath(name) {
+      const paths = {
+        check: '<path d="M20 6L9 17l-5-5"/>',
+        x: '<path d="M18 6L6 18"/><path d="M6 6l12 12"/>',
+        phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.91.33 1.8.63 2.65a2 2 0 0 1-.45 2.11L8 9.77a16 16 0 0 0 6.23 6.23l1.29-1.29a2 2 0 0 1 2.11-.45c.85.3 1.74.51 2.65.63A2 2 0 0 1 22 16.92z"/>',
+        send: '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>'
+      };
+      return `<svg class="icon" viewBox="0 0 24 24">${paths[name] || paths.check}</svg>`;
+    }
+
+    function renderAll() {
+      renderWeek();
+      renderTimeline('#timeline');
+      renderTimeline('#adminTimeline', true);
+      renderAlternatives();
+      renderMyBookings();
+      renderAdminRequests();
+      renderRecurring();
+      renderMetrics();
+      hydrateSelects();
+    }
+
+    function renderMetrics() {
+      $('#confirmedMetric').textContent = state.bookings.filter(b => b.status === 'confirmed' && b.date === '2026-07-09').length;
+      $('#pendingMetric').textContent = state.bookings.filter(b => b.status === 'pending').length;
+    }
+
+    function renderWeek() {
+      const grid = $('#weekGrid');
+      grid.innerHTML = '';
+      for (let i = 0; i < state.settings.horizon; i++) {
+        const date = new Date(state.today);
+        date.setDate(state.today.getDate() + i);
+        const dateStr = iso(date);
+        const col = document.createElement('div');
+        col.className = 'day-column' + (i === 0 ? ' today' : '');
+        const monthDay = `${pad(date.getDate())}.${pad(date.getMonth() + 1)}`;
+        col.innerHTML = `<div class="day-title"><strong>${dayNames[date.getDay()]}</strong><span>${monthDay}</span></div><div class="slot-stack"></div>`;
+        const stack = $('.slot-stack', col);
+        const ranges = [
+          ['08:00', '09:00'], ['09:00', '10:30'], ['10:30', '12:00'], ['12:00', '14:00'],
+          ['14:00', '15:30'], ['15:30', '17:00'], ['17:00', '18:30'], ['18:30', '20:00'], ['20:00', '22:00'], ['22:00', '23:00']
+        ];
+        ranges.forEach(([start, end]) => {
+          const busy = isBusy(dateStr, start, end);
+          const pending = !busy && hasPending(dateStr, start, end);
+          const btn = document.createElement('button');
+          btn.className = 'slot-btn' + (busy ? ' busy' : pending ? ' pending' : '');
+          btn.textContent = busy ? `${start} band` : pending ? `${start} navbat` : `${start}–${end}`;
+          btn.disabled = busy;
+          if (!busy) btn.addEventListener('click', () => openBookingModal({ date: dateStr, start, end }));
+          stack.appendChild(btn);
+        });
+        grid.appendChild(col);
+      }
+    }
+
+    function renderTimeline(target, admin = false) {
+      const root = $(target);
+      root.innerHTML = '';
+      const date = '2026-07-09';
+      for (let h = state.settings.open; h < state.settings.close; h++) {
+        const start = `${pad(h)}:00`;
+        const end = `${pad(h + 1)}:00`;
+        const busyBooking = state.bookings.find(b => b.date === date && b.status === 'confirmed' && timeToMin(start) < timeToMin(b.end) && timeToMin(end) > timeToMin(b.start));
+        const pendingCount = state.bookings.filter(b => b.date === date && b.status === 'pending' && timeToMin(start) < timeToMin(b.end) && timeToMin(end) > timeToMin(b.start)).length;
+        const row = document.createElement('div');
+        row.className = 'time-row';
+        row.innerHTML = `<div class="time-label">${start}</div>`;
+        const cell = document.createElement('button');
+        cell.className = 'time-cell ' + (busyBooking ? 'busy' : 'free');
+        cell.innerHTML = busyBooking ? `${busyBooking.name} · ${busyBooking.start}–${busyBooking.end}` : (pendingCount ? `${pendingCount} pending · so‘rov yuborish mumkin` : 'Bo‘sh — so‘rov yuborish');
+        if (!busyBooking) cell.addEventListener('click', () => openBookingModal({ date, start, end: minToTime(timeToMin(start) + 120) }));
+        if (admin && busyBooking) {
+          cell.addEventListener('click', () => {
+            busyBooking.status = 'cancelled';
+            toast(`Confirmed bron bekor qilindi. Shu slot bilan kesishuvchi pending bo‘lsa admin xabar oladi.`);
+            renderAll();
+          });
+        }
+        row.appendChild(cell);
+        root.appendChild(row);
+      }
+    }
+
+    function renderAlternatives() {
+      const list = $('#alternativesList');
+      const date = '2026-07-09';
+      const options = [];
+      for (let m = state.settings.open * 60; m + 60 <= state.settings.close * 60; m += 60) {
+        const start = minToTime(m);
+        const end = minToTime(m + 90 <= state.settings.close * 60 ? m + 90 : m + 60);
+        if (!isBusy(date, start, end)) options.push({ start, end });
+      }
+      list.innerHTML = options.slice(0, 5).map(o => `<button class="booking-card" data-alt="${o.start}-${o.end}"><div class="card-row"><strong>${o.start}–${o.end}</strong><span class="status confirmed">bo‘sh</span></div><small>Rad xabarida muqobil sifatida chiqadi</small></button>`).join('');
+      $$('[data-alt]').forEach(btn => {
+        const [start, end] = btn.dataset.alt.split('-');
+        btn.addEventListener('click', () => openBookingModal({ date, start, end }));
+      });
+    }
+
+    function renderMyBookings() {
+      const mine = state.bookings.filter(b => b.name === 'Mening jamoam' || b.phone === '+998 99 555 44 33');
+      $('#myBookings').innerHTML = mine.map(b => `
+        <article class="booking-card ${b.status}">
+          <div class="card-row"><strong>${b.date} · ${b.start}–${b.end}</strong><span class="status ${b.status}">${b.status}</span></div>
+          <small>${b.status === 'pending' ? `Navbatda ${getQueuePosition(b)}-chisiz · Admin javobi kutilmoqda` : b.status === 'confirmed' ? 'Tasdiqlangan bron · user o‘zi bekor qila olmaydi' : 'Arxiv status'}</small>
+        </article>
+      `).join('') || '<div class="empty-state">Hozircha so‘rov yo‘q.</div>';
+    }
+
+    function getQueuePosition(booking) {
+      return state.bookings
+        .filter(b => b.status === 'pending' && b.date === booking.date && b.start === booking.start && b.end === booking.end)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .findIndex(b => b.id === booking.id) + 1;
+    }
+
+    function renderAdminRequests() {
+      const pending = state.bookings.filter(b => b.status === 'pending').sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      const list = $('#adminRequests');
+      list.innerHTML = pending.map((b, idx) => `
+        <article class="request-item" data-id="${b.id}">
+          <div class="queue-no">#${idx + 1}</div>
+          <div class="request-main">
+            <strong>${b.name}</strong>
+            <span>${b.phone} · ${b.date} · ${b.start}–${b.end} · navbat o‘rni: ${getQueuePosition(b)}</span>
+          </div>
+          <div class="request-actions">
+            <button class="tiny success" data-action="confirm">${iconPath('check')}Tasdiq</button>
+            <button class="tiny red" data-action="reject">${iconPath('x')}Rad</button>
+            <button class="tiny" data-action="write">${iconPath('send')}Yozish</button>
+            <button class="tiny" data-action="phone">${iconPath('phone')}Qo‘ng‘iroq</button>
+          </div>
+        </article>
+      `).join('') || '<div class="empty-state">Pending so‘rovlar qolmadi.</div>';
+
+      $$('#adminRequests [data-action]').forEach(btn => {
+        btn.addEventListener('click', (event) => {
+          const item = event.target.closest('[data-id]');
+          const booking = state.bookings.find(b => b.id === item.dataset.id);
+          const action = btn.dataset.action;
+          if (action === 'confirm') confirmBooking(booking);
+          if (action === 'reject') rejectBooking(booking);
+          if (action === 'write') toast(`Telegram deep link: tg://user?id=${booking.name.toLowerCase().replaceAll(' ', '_')}`);
+          if (action === 'phone') toast(`${booking.phone} raqamiga qo‘ng‘iroq amali ochiladi.`);
+        });
+      });
+    }
+
+    function confirmBooking(booking) {
+      const hasConflict = state.bookings.some(b => b.id !== booking.id && b.status === 'confirmed' && overlaps(booking, b));
+      if (hasConflict) {
+        rejectBooking(booking, 'Overlap bor — tasdiqlab bo‘lmadi.');
+        return;
+      }
+      booking.status = 'confirmed';
+      booking.decidedAt = new Date().toISOString();
+      const rejected = [];
+      state.bookings.forEach(b => {
+        if (b.id !== booking.id && b.status === 'pending' && overlaps(booking, b)) {
+          b.status = 'rejected';
+          b.decidedAt = new Date().toISOString();
+          rejected.push(b.name);
+        }
+      });
+      toast(`${booking.name} tasdiqlandi. ${rejected.length ? rejected.join(', ') + ' avtomatik rad etildi va muqobil vaqtlar yuborildi.' : 'Overlap pending yo‘q.'}`);
+      renderAll();
+      animatePanels();
+    }
+
+    function rejectBooking(booking, custom) {
+      booking.status = 'rejected';
+      booking.decidedAt = new Date().toISOString();
+      toast(custom || `${booking.name} rad etildi. Userga o‘sha kun bo‘yicha bo‘sh muqobil vaqtlar yuborildi.`);
+      renderAll();
+    }
+
+    function renderRecurring() {
+      $('#recurringList').innerHTML = state.recurring.map((r, idx) => `
+        <article class="request-item">
+          <div class="queue-no">R${idx + 1}</div>
+          <div class="request-main">
+            <strong>${r.name}</strong>
+            <span>${r.phone} · ${r.day} · ${r.start}–${r.end} · ${r.active ? 'active' : 'inactive'}</span>
+          </div>
+          <div class="request-actions">
+            <button class="tiny warn" data-recurring-week="${r.id}">Shu hafta bekor</button>
+            <button class="tiny red" data-recurring-series="${r.id}">Seriyani yopish</button>
+          </div>
+        </article>
+      `).join('');
+
+      $$('[data-recurring-week]').forEach(btn => btn.addEventListener('click', () => toast('Shu haftadagi konkret booking → cancelled bo‘ladi.')));
+      $$('[data-recurring-series]').forEach(btn => btn.addEventListener('click', () => {
+        const r = state.recurring.find(x => x.id === btn.dataset.recurringSeries);
+        r.active = false;
+        toast(`${r.name} seriyasi inactive qilindi, kelgusi generatsiyalar cancelled bo‘ladi.`);
+        renderRecurring();
+      }));
+    }
+
+    function hydrateSelects() {
+      const options = [];
+      for (let m = state.settings.open * 60; m <= state.settings.close * 60; m += 30) options.push(minToTime(m));
+      ['modalStart', 'modalEnd', 'manualStart', 'manualEnd'].forEach(id => {
+        const select = $('#' + id);
+        const current = select.value;
+        select.innerHTML = options.map(t => `<option value="${t}">${t}</option>`).join('');
+        select.value = current || (id.includes('End') ? '22:00' : '20:00');
+      });
+      $('#manualDate').value = $('#manualDate').value || '2026-07-09';
+      $('#modalDate').value = $('#modalDate').value || '2026-07-09';
+    }
+
+    function openBookingModal(preset = {}) {
+      hydrateSelects();
+      $('#modalDate').value = preset.date || '2026-07-09';
+      $('#modalStart').value = preset.start || '20:00';
+      $('#modalEnd').value = preset.end || '22:00';
+      $('#bookingModal').classList.add('show');
+      $('#bookingModal').setAttribute('aria-hidden', 'false');
+      if (window.gsap) {
+        gsap.fromTo('#bookingModal', { autoAlpha: 0 }, { autoAlpha: 1, duration: .18, ease: 'power2.out' });
+        gsap.fromTo('.modal-card', { y: 32, scale: .96, autoAlpha: 0 }, { y: 0, scale: 1, autoAlpha: 1, duration: .36, ease: 'back.out(1.6)' });
+      }
+    }
+
+    function closeBookingModal() {
+      if (window.gsap) {
+        gsap.to('.modal-card', { y: 24, scale: .97, autoAlpha: 0, duration: .18, ease: 'power2.in' });
+        gsap.to('#bookingModal', { autoAlpha: 0, duration: .2, ease: 'power2.in', onComplete: () => {
+          $('#bookingModal').classList.remove('show');
+          $('#bookingModal').setAttribute('aria-hidden', 'true');
+        }});
+      } else {
+        $('#bookingModal').classList.remove('show');
+      }
+    }
+
+    function submitRequest() {
+      const date = $('#modalDate').value;
+      const start = $('#modalStart').value;
+      const end = $('#modalEnd').value;
+      const phone = $('#modalPhone').value;
+      const duration = timeToMin(end) - timeToMin(start);
+      if (duration < state.settings.min || duration > state.settings.max) {
+        toast('Davomiylik 1 soatdan 3 soatgacha bo‘lishi kerak.');
+        return;
+      }
+      if (isBusy(date, start, end)) {
+        toast('Bu oraliqda confirmed bron bor. Boshqa vaqt tanlang.');
+        return;
+      }
+      const activeMine = state.bookings.filter(b => b.phone === phone && b.status === 'pending').length;
+      const duplicate = state.bookings.some(b => b.phone === phone && b.status === 'pending' && b.date === date && b.start === start && b.end === end);
+      if (activeMine >= 3) { toast('Limit: user bir vaqtda maksimal 3 ta pending so‘rov ushlab turadi.'); return; }
+      if (duplicate) { toast('Bu diapazonga sizda allaqachon pending so‘rov bor.'); return; }
+      const b = {
+        id: `b${Math.random().toString(36).slice(2, 8)}`,
+        name: 'Mening jamoam', phone, date, start, end,
+        status: 'pending', source: 'user', queue: 1, createdAt: new Date().toISOString()
+      };
+      state.bookings.push(b);
+      closeBookingModal();
+      toast(`So‘rov qabul qilindi. Navbatda ${getQueuePosition(b)}-chisiz.`);
+      renderAll();
+      animatePanels();
+    }
+
+    function addManualBooking() {
+      const b = {
+        id: `m${Math.random().toString(36).slice(2, 8)}`,
+        name: $('#manualName').value || 'Qo‘lda mijoz',
+        phone: $('#manualPhone').value || '+998',
+        date: $('#manualDate').value,
+        start: $('#manualStart').value,
+        end: $('#manualEnd').value,
+        status: 'confirmed', source: 'admin', queue: 0, createdAt: new Date().toISOString()
+      };
+      if (timeToMin(b.end) <= timeToMin(b.start)) { toast('End startdan keyin bo‘lishi kerak.'); return; }
+      if (isBusy(b.date, b.start, b.end)) { toast('Overlap bor — confirmed bron qo‘shilmadi.'); return; }
+      state.bookings.push(b);
+      toast(`${b.name} uchun qo‘lda confirmed bron qo‘shildi.`);
+      renderAll();
+    }
+
+    function toast(message) {
+      const box = document.createElement('div');
+      box.className = 'toast';
+      box.textContent = message;
+      $('#toastWrap').appendChild(box);
+      if (window.gsap) gsap.fromTo(box, { y: 18, autoAlpha: 0, scale: .96 }, { y: 0, autoAlpha: 1, scale: 1, duration: .26, ease: 'back.out(1.5)' });
+      setTimeout(() => {
+        if (window.gsap) gsap.to(box, { y: 12, autoAlpha: 0, duration: .22, ease: 'power2.in', onComplete: () => box.remove() });
+        else box.remove();
+      }, 4400);
+    }
+
+    function setTab(name) {
+      state.selectedTab = name;
+      $$('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.tab === name));
+      $$('.view').forEach(view => view.classList.toggle('active', view.id === `view-${name}`));
+      animatePanels();
+    }
+
+    function animatePanels() {
+      if (!window.gsap) return;
+      gsap.fromTo(`#view-${state.selectedTab} .js-panel, #view-${state.selectedTab} .booking-card, #view-${state.selectedTab} .request-item`,
+        { y: 14, autoAlpha: 0, filter: 'blur(4px)' },
+        { y: 0, autoAlpha: 1, filter: 'blur(0px)', duration: .34, stagger: .045, ease: 'power2.out' }
+      );
+    }
+
+    function bootAnimations() {
+      if (!window.gsap) return;
+      gsap.fromTo('.js-pop', { y: -18, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .5, ease: 'power3.out' });
+      gsap.fromTo('.js-rise', { y: 22, autoAlpha: 0, filter: 'blur(8px)' }, { y: 0, autoAlpha: 1, filter: 'blur(0px)', duration: .68, stagger: .08, ease: 'power3.out', delay: .06 });
+      gsap.fromTo('.phone-slot', { y: 16, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .44, stagger: .07, ease: 'back.out(1.7)', delay: .35 });
+    }
+
+    function bindEvents() {
+      $$('.tab').forEach(tab => tab.addEventListener('click', () => setTab(tab.dataset.tab)));
+      $$('[data-tab-target]').forEach(btn => btn.addEventListener('click', () => {
+        const target = btn.dataset.tabTarget;
+        if (target === 'requests' && !state.admin) {
+          state.admin = true;
+          document.body.classList.add('admin-mode');
+          $('#adminToggle').setAttribute('aria-pressed', 'true');
+          toast('Admin rejim yoqildi. Admin tablar ochildi.');
+        }
+        setTab(target);
+      }));
+      $('#adminToggle').addEventListener('click', () => {
+        state.admin = !state.admin;
+        document.body.classList.toggle('admin-mode', state.admin);
+        $('#adminToggle').setAttribute('aria-pressed', String(state.admin));
+        toast(state.admin ? 'Admin rejim yoqildi.' : 'Admin rejim o‘chirildi.');
+        if (!state.admin && ['requests', 'schedule', 'recurring', 'settings'].includes(state.selectedTab)) setTab('week');
+      });
+      $('#openQuickRequest').addEventListener('click', () => openBookingModal({ date: '2026-07-09', start: '20:00', end: '22:00' }));
+      $('#openMyRequest').addEventListener('click', () => openBookingModal({ date: '2026-07-10', start: '18:00', end: '20:00' }));
+      $('#selectTwoHours').addEventListener('click', () => openBookingModal({ date: '2026-07-09', start: '20:00', end: '22:00' }));
+      $('#closeModal').addEventListener('click', closeBookingModal);
+      $('#cancelModal').addEventListener('click', closeBookingModal);
+      $('#bookingModal').addEventListener('click', e => { if (e.target.id === 'bookingModal') closeBookingModal(); });
+      $('#submitRequest').addEventListener('click', submitRequest);
+      $('#simulateRequest').addEventListener('click', () => {
+        state.bookings.push({ id: `d${Math.random().toString(36).slice(2, 8)}`, name: 'Demo User', phone: '+998 99 000 00 00', date: '2026-07-09', start: '20:00', end: '22:00', status: 'pending', source: 'user', queue: 1, createdAt: new Date().toISOString() });
+        toast('Demo pending so‘rov FIFO ro‘yxatga qo‘shildi.');
+        renderAll();
+        animatePanels();
+      });
+      $('#addManualBooking').addEventListener('click', addManualBooking);
+      $('#addRecurring').addEventListener('click', () => {
+        state.recurring.push({ id: `r${state.recurring.length + 1}`, name: 'Yangi doimiy mijoz', phone: '+998 90 000 11 22', day: 'Juma', start: '18:00', end: '20:00', active: true });
+        toast('Yangi recurring qator qo‘shildi.');
+        renderRecurring();
+      });
+      $('#saveSettings').addEventListener('click', () => toast('Sozlamalar demo holatda saqlandi. Backend ulansa PUT /admin/settings ketadi.'));
+      $$('.phone-slot[data-slot]').forEach(btn => btn.addEventListener('click', () => {
+        const [start, end] = btn.dataset.slot.split('-');
+        openBookingModal({ date: '2026-07-09', start, end });
+      }));
+      document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#bookingModal').classList.contains('show')) closeBookingModal(); });
+    }
+
+    renderAll();
+    bindEvents();
+    bootAnimations();
+  </script>
+</body>
+</html>
