@@ -109,13 +109,20 @@ app.get("/webhook/setup", async (c: any) => {
 const publicUrl = Deno.env.get("MINI_APP_URL");
 if (Deno.env.get("DENO_DEPLOYMENT_ID") && publicUrl) {
   const webhookUrl = `${publicUrl.replace(/\/$/, "")}/webhook`;
-  bot.api
-    .setWebhook(webhookUrl, {
-      secret_token: webhookSecret,
-      allowed_updates: ["message", "callback_query"],
-    })
-    .then(() => console.log("Webhook auto-registered:", webhookUrl))
-    .catch((e) => console.error("Webhook auto-registration failed:", e));
+  (async () => {
+    try {
+      // Delete first for a clean slate, then set. No drop_pending_updates on either
+      // call, so updates queued during a cold start are not lost.
+      await bot.api.deleteWebhook();
+      await bot.api.setWebhook(webhookUrl, {
+        secret_token: webhookSecret,
+        allowed_updates: ["message", "callback_query"],
+      });
+      console.log("Webhook auto-registered:", webhookUrl);
+    } catch (e) {
+      console.error("Webhook auto-registration failed:", e);
+    }
+  })();
 }
 
 // Health check
