@@ -45,7 +45,36 @@ export const UserWeekView: FC<{ selectedDate?: string }> = async ({ selectedDate
       <PageHeader
         title="Jadval"
         subtitle={`${days[0].display} - ${days[days.length - 1].display}`}
+        rightNode={
+          <button
+            id="adminPanelLink"
+            hx-get="/app/admin/requests"
+            hx-target="#app-content"
+            hx-push-url="true"
+            aria-label="Boshqaruv paneli"
+            class="hidden w-10 h-10 rounded-full bg-crm-primarySoft text-crm-primary items-center justify-center active:scale-95"
+          >
+            <Icon name="settings" class="w-5 h-5" />
+          </button>
+        }
       />
+      <script>{raw(`
+        (async function revealAdminLink() {
+          var link = document.getElementById('adminPanelLink');
+          if (!link) return;
+          try {
+            var initData = window.Telegram?.WebApp?.initData || '';
+            var res = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + initData } });
+            var data = await res.json();
+            if (res.ok && data.isAdmin) {
+              link.classList.remove('hidden');
+              link.classList.add('flex');
+            }
+          } catch (e) {
+            // silent — this is just a discoverability link, not a security boundary
+          }
+        })();
+      `)}</script>
       <div class="px-5 space-y-4">
         {/* First-time explainer — dismissible, remembered via localStorage */}
         <div id="onboardHint" class="p-4 bg-crm-primarySoft/40 border border-crm-primary/20 rounded-[18px] flex items-start gap-3 gsap-stagger">

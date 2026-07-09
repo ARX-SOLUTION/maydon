@@ -50,11 +50,13 @@ const botContext = {
   },
 };
 
-function miniAppKeyboard(): InlineKeyboard {
-  return new InlineKeyboard().url(
-    "📅 Band qilish",
-    Deno.env.get("MINI_APP_URL") ?? "https://maydon.uz",
-  );
+function miniAppKeyboard(isAdmin = false): InlineKeyboard {
+  const base = Deno.env.get("MINI_APP_URL") ?? "https://maydon.uz";
+  const keyboard = new InlineKeyboard().url("📅 Band qilish", base);
+  if (isAdmin) {
+    keyboard.row().url("🛠 Boshqaruv paneli", `${base}/app/admin/requests`);
+  }
+  return keyboard;
 }
 
 // Ask for whatever onboarding step the user is currently on
@@ -113,7 +115,7 @@ bot.command("start", async (ctx: any) => {
     `Futbol maydonini band qilish uchun Mini App'dan foydalaning.\n\n` +
     (isAdmin ? "✅ Siz adminsiz." : "");
 
-  await ctx.reply(welcomeText, { reply_markup: miniAppKeyboard() });
+  await ctx.reply(welcomeText, { reply_markup: miniAppKeyboard(isAdmin) });
 });
 
 // /addadmin <telegram_id> — existing admins promote someone to admin
