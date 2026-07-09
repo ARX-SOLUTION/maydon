@@ -1,5 +1,6 @@
-// Prisma schema for Maydon. Deno-native: run the CLI with `deno run -A npm:prisma …`.
-// Prisma 7: the connection URL lives in prisma.config.ts, not here.
+// Maydon real domain schema (mirrors src/models.ts + adds history & notifications).
+// Deno-native: run the CLI with `deno task prisma …`. Prisma 7: the connection URL
+// lives in prisma.config.ts, not here.
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,18 +11,122 @@ datasource db {
   provider = "postgresql"
 }
 
-// Starter models — replace with your own (real domain: users, bookings, notifications).
-model Venue {
-  id        Int       @id @default(autoincrement())
-  name      String
-  createdAt DateTime  @default(now())
-  bookings  Booking[]
+enum AdminRole {
+  owner
+  admin
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  rejected
+  expired
+  cancelled
+  completed
+}
+
+enum BookingSource {
+  user
+  admin
+  recurring
+}
+
+model User {
+  telegramId     BigInt    @id
+  name           String
+  username       String?
+  phone          String?
+  isBlocked      Boolean   @default(false)
+  isActive       Boolean   @default(false)
+  onboardingStep String? // "phone" | "name" | null
+  createdAt      DateTime  @default(now())
+  bookings       Booking[]
+}
+
+// Admins are stored separately from users (an admin can exist before a User row),
+// mirroring the current KV design — so no FK to User.
+model Admin {
+  telegramId BigInt    @id
+  name       String
+  role       AdminRole @default(admin)
+  addedAt    DateTime  @default(now())
 }
 
 model Booking {
-  id        Int      @id @default(autoincrement())
-  slot      String
-  venue     Venue    @relation(fields: [venueId], references: [id])
-  venueId   Int
+  id            String         @id // ulid
+  userId        BigInt? // null when created by an admin
+  user          User?          @relation(fields: [userId], references: [telegramId])
+  clientName    String?
+  clientPhone   String?
+  date          String // "YYYY-MM-DD"
+  start         String // "HH:MM"
+  end           String // "HH:MM"
+  status        BookingStatus  @default(pending)
+  source        BookingSource  @default(user)
+  recurringId   String?
+  createdAt     DateTime       @default(now())
+  decidedAt     DateTime?
+  events        BookingEvent[]
+  notifications Notification[]
+
+  @@index([date])
+  @@index([userId])
+  @@index([status])
+}
+
+// Audit trail of status transitions — powers user history + "who decided when".
+model BookingEvent {
+  id         String         @id @default(cuid())
+  bookingId  String
+  booking    Booking        @relation(fields: [bookingId], references: [id])
+  fromStatus BookingStatus?
+  toStatus   BookingStatus
+  actorId    BigInt? // admin telegramId who acted; null for system/user
+  at         DateTime       @default(now())
+
+  @@index([bookingId])
+}
+
+// In-app admin notification feed (bot DMs stay as-is; this is the "notifications tab").
+model Notification {
+  id            String    @id @default(cuid())
+  type          String // "new_request" | "cancelled" | "confirmed" | ...
+  title         String
+  body          String?
+  bookingId     String?
+  booking       Booking?  @relation(fields: [bookingId], references: [id])
+  targetAdminId BigInt? // null = broadcast to all admins
+  createdAt     DateTime  @default(now())
+  readAt        DateTime?
+
+  @@index([targetAdminId, readAt])
+  @@index([createdAt])
+}
+
+model Recurring {
+  id         String  @id @default(cuid())
+  dayOfWeek  Int // 0-6
+  startTime  String
+  endTime    String
+  clientName String
+  phone      String?
+  active     Boolean @default(true)
+}
+
+// One-time admin invite tokens (deep-link).
+model InviteToken {
+  token     String   @id
+  createdBy BigInt
   createdAt DateTime @default(now())
+}
+
+// Singleton settings row (id is always 1).
+model Settings {
+  id          Int    @id @default(1)
+  openTime    String
+  closeTime   String
+  horizonDays Int
+  minDurMin   Int
+  maxDurMin   Int
+  snapMin     Int
 }

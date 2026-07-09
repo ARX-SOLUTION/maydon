@@ -1,11 +1,18 @@
-// Starter seed — replace with your own once the real schema lands.
+// Seed the Settings singleton the app needs (default working hours / rules).
 import { prisma } from "../lib/prisma.ts";
 
-const venue = await prisma.venue.create({
-  data: {
-    name: "Markaziy maydon",
-    bookings: { create: [{ slot: "18:00-19:00" }, { slot: "19:00-20:00" }] },
+await prisma.settings.upsert({
+  where: { id: 1 },
+  update: {},
+  create: {
+    id: 1,
+    openTime: "08:00",
+    closeTime: "23:00",
+    horizonDays: 7,
+    minDurMin: 60,
+    maxDurMin: 180,
+    snapMin: 30,
   },
 });
-console.log(`Seeded venue #${venue.id} with 2 bookings.`);
+console.log("Seeded Settings singleton (08:00–23:00, 7-day horizon).");
 await prisma.$disconnect();
