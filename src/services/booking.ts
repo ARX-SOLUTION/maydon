@@ -145,10 +145,16 @@ async function checkOverlapWithConfirmed(
   bookings: Booking[],
   start: string,
   end: string,
+  excludeId: string,
 ): Promise<boolean> {
+  // Exclude the booking being confirmed — otherwise a concurrent confirm/confirm
+  // race sees this booking already flipped to "confirmed" on retry and treats it
+  // as a conflict against itself, rejecting a booking that was just confirmed.
   return bookings.some(
     (b: Booking) =>
-      b.status === "confirmed" && overlaps(start, end, b.start, b.end),
+      b.id !== excludeId &&
+      b.status === "confirmed" &&
+      overlaps(start, end, b.start, b.end),
   );
 }
 
@@ -172,8 +178,8 @@ export async function confirmBooking(
     // 1. Read all bookings for the day
     const dayBookings = await getBookingsByDay(date);
 
-    // 2. Check overlap with confirmed bookings
-    if (await checkOverlapWithConfirmed(dayBookings, b.start, b.end)) {
+    // 2. Check overlap with confirmed bookings (other than this one)
+    if (await checkOverlapWithConfirmed(dayBookings, b.start, b.end, id)) {
       // Overlap detected → reject
       await rejectBooking(id);
       return { success: false, error: "Slot conflict detected" };

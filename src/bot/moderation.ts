@@ -29,6 +29,11 @@ export function registerModeration(): void {
       return;
     }
 
+    if (targetId === userId) {
+      await ctx.reply("O'zingizni bloklay olmaysiz.");
+      return;
+    }
+
     const target = await getUser(targetId);
     if (!target) {
       await ctx.reply("Bu foydalanuvchi hali botdan foydalanmagan.");
