@@ -21,6 +21,7 @@ import {
   notifyUserQueued,
   notifyUserRejected,
 } from "../services/notify.ts";
+import type { Booking } from "../models.ts";
 import { bot, botContext } from "./client.ts";
 
 // Guard: only admins may act on request-decision callbacks. Returns false (and

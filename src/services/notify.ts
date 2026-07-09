@@ -4,6 +4,12 @@
 
 import type { Booking, User } from "../models.ts";
 
+// Escape user-controlled text so a name/phone containing Markdown metacharacters
+// can't break parse_mode:"Markdown" (which would 400 and silently drop the message).
+function escapeMd(s: string): string {
+  return s.replace(/[_*`\[]/g, "\\$&");
+}
+
 interface BotContext {
   sendMessage: (chatId: number, text: string, options?: any) => Promise<void>;
   editMessageText: (
@@ -22,8 +28,8 @@ export async function notifyNewRequest(
 ): Promise<void> {
   const text =
     `🆕 **Yangi so'rov**\n\n` +
-    `👤 ${user.name}\n` +
-    `📞 ${user.phone ?? "N/A"}\n` +
+    `👤 ${escapeMd(user.name)}\n` +
+    `📞 ${escapeMd(user.phone ?? "N/A")}\n` +
     `📅 ${booking.date}\n` +
     `⏰ ${booking.start} - ${booking.end}\n` +
     `🔢 Navbat: #${queuePosition}\n\n` +
