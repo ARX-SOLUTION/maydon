@@ -18,10 +18,25 @@ export interface Settings {
   snapMin: number;
 }
 
+export type AdminRole = "owner" | "admin";
+
 export interface Admin {
   telegramId: number;
   name: string;
+  role: AdminRole; // "owner" = bootstrap admin, manages admins; "admin" = helper
   addedAt: string; // ISO
+}
+
+/**
+ * The single rule that classifies an admin's role: whoever matches the configured
+ * ADMIN_TELEGRAM_ID is the owner; every other admin is a helper. Kept pure (no KV)
+ * so both bootstrap and the migration share it and it stays trivially testable.
+ */
+export function roleFor(
+  telegramId: number,
+  ownerId: number | null,
+): AdminRole {
+  return ownerId !== null && telegramId === ownerId ? "owner" : "admin";
 }
 
 export type BookingStatus = "pending" | "confirmed" | "rejected" | "expired" | "cancelled" | "completed";

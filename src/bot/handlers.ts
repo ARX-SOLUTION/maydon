@@ -8,6 +8,7 @@ import {
   getAdmin,
   getPendingRequests,
   getUser,
+  isOwner,
   keys,
   kv,
   upsertUser,
@@ -118,14 +119,13 @@ bot.command("start", async (ctx: any) => {
   await ctx.reply(welcomeText, { reply_markup: miniAppKeyboard(isAdmin) });
 });
 
-// /addadmin <telegram_id> — existing admins promote someone to admin
+// /addadmin <telegram_id> — owner promotes someone to a helper admin
 bot.command("addadmin", async (ctx: any) => {
   const userId = ctx.from?.id;
   if (!userId) return;
 
-  const isAdmin = !!(await getAdmin(userId));
-  if (!isAdmin) {
-    await ctx.reply("Faqat adminlar uchun");
+  if (!(await isOwner(userId))) {
+    await ctx.reply("Faqat asosiy admin (owner) admin qo'sha oladi.");
     return;
   }
 
@@ -154,6 +154,7 @@ bot.command("addadmin", async (ctx: any) => {
   await addAdmin({
     telegramId: targetId,
     name: targetUser.name,
+    role: "admin",
     addedAt: new Date().toISOString(),
   });
 

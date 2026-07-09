@@ -9,7 +9,13 @@ import userApi from "./api/user.ts";
 import { uiRouter } from "./ui/router.tsx";
 import { bot } from "./bot/handlers.ts";
 import { registerCronJobs } from "./cron.ts";
-import { addAdmin, initDefaultSettings } from "./kv.ts";
+import {
+  addAdmin,
+  getAdmin,
+  initDefaultSettings,
+  migrateAdminRoles,
+} from "./kv.ts";
+import { roleFor } from "./models.ts";
 
 const app = new Hono();
 
@@ -30,14 +36,21 @@ const webhookSecret = await (async () => {
 // Initialize settings on startup
 await initDefaultSettings();
 
-// Add first admin from env (for bootstrap)
+// Add first admin from env (for bootstrap) as the owner, preserving their existing
+// name/addedAt if already present so a restart doesn't reset them.
 const adminId = Deno.env.get("ADMIN_TELEGRAM_ID");
-if (adminId) {
+const ownerId = adminId ? parseInt(adminId) : null;
+if (ownerId !== null) {
+  const existing = await getAdmin(ownerId);
   await addAdmin({
-    telegramId: parseInt(adminId),
-    name: "Admin",
-    addedAt: new Date().toISOString(),
+    telegramId: ownerId,
+    name: existing?.name ?? "Admin",
+    role: roleFor(ownerId, ownerId),
+    addedAt: existing?.addedAt ?? new Date().toISOString(),
   });
+  // Backfill role on any admins created before the role field existed (helpers).
+  // Only runs with a known owner — an unset ADMIN_TELEGRAM_ID must NOT demote everyone.
+  await migrateAdminRoles(ownerId);
 }
 
 // UI and Web routes
