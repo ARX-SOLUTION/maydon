@@ -6,7 +6,11 @@ import type { Admin, Booking, Recurring, Settings, User } from "./models.ts";
 
 const KV_PATH = Deno.env.get("KV_PATH") ?? "maydon_kv";
 
-export const kv = await Deno.openKv(KV_PATH);
+// Named openKv() on Deno Deploy requires a dashboard-provisioned KV db and 404s otherwise; fall back to the zero-config default.
+export const kv = await Deno.openKv(KV_PATH).catch((e) => {
+  console.error(`openKv("${KV_PATH}") failed, falling back to the default KV:`, e);
+  return Deno.openKv();
+});
 
 // ========== Key Builders ==========
 
