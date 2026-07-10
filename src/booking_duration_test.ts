@@ -59,6 +59,7 @@ Deno.test("a 90 minute booking marks exactly the following 30 minute slots busy"
   const availability = await getDayAvailability(date);
   for (const start of ["10:00", "10:30", "11:00"]) {
     assertEquals(availability.slots.find((slot) => slot.start === start)?.isBusy, true, start);
+    assertEquals(availability.slots.find((slot) => slot.start === start)?.bookedBy, "90 min");
   }
   assertEquals(availability.slots.find((slot) => slot.start === "11:30")?.isBusy, false);
   assertEquals(availability.slots.find((slot) => slot.start === "09:30")?.isBusy, false);

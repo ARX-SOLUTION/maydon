@@ -22,7 +22,8 @@ async function handleAction(id, action, btn) {
     var data = await res.json();
 
     if (res.ok && data.success) {
-      window.toast("So'rov " + (action === 'confirm' ? 'tasdiqlandi' : 'rad etildi') + "!", 'success');
+      var labels = { confirm: 'tasdiqlandi', reject: 'rad etildi', cancel: 'bekor qilindi' };
+      window.toast("So'rov " + (labels[action] || 'yangilandi') + "!", 'success');
       htmx.ajax('GET', '/app/admin/requests', '#app-content');
     } else {
       window.toast(data.error || "Xatolik yuz berdi", 'error');
@@ -147,6 +148,12 @@ export const AdminRequests: FC = async () => {
                   <Icon name="check" class="w-4 h-4 mr-1.5" /> Tasdiqlash
                 </button>
               </div>
+              <button
+                onclick={`handleAction('${req.id}', 'cancel', this)`}
+                class="mt-3 w-full min-h-[44px] rounded-[14px] bg-crm-dangerSoft text-crm-danger font-semibold text-[14px] tap-scale focus-ring flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                <Icon name="xCircle" class="w-4 h-4" /> Bekor qilish
+              </button>
             </Card>
           ))}
         </div>
