@@ -90,7 +90,7 @@ export class KvRepo implements Repo {
       atomic.set(keys.pendingByCreated(booking.createdAt, booking.id), booking.id);
     }
     if (booking.inviteToken) {
-      atomic.set(keys.inviteToken(booking.inviteToken), booking.id);
+      atomic.set(keys.bookingInviteToken(booking.inviteToken), booking.id);
     }
     if (booking.userId != null) {
       atomic.set(keys.bookingByUser(booking.userId, booking.id), booking.id);
@@ -109,7 +109,7 @@ export class KvRepo implements Repo {
       atomic.set(keys.pendingByCreated(booking.createdAt, booking.id), booking.id);
     }
     if (booking.inviteToken && booking.inviteToken !== current.value.inviteToken) {
-      atomic.set(keys.inviteToken(booking.inviteToken), booking.id);
+      atomic.set(keys.bookingInviteToken(booking.inviteToken), booking.id);
     }
     const ok = await atomic.commit();
     if (!ok.ok) throw new Error("Booking changed concurrently");
@@ -140,7 +140,7 @@ export class KvRepo implements Repo {
 
   // ── Invite tokens ─────────────────────────────────────────────────────
   async createInviteToken(token: string, createdBy: number): Promise<void> {
-    await kv.set(keys.inviteToken(token), {
+    await kv.set(keys.adminInviteToken(token), {
       createdBy,
       createdAt: new Date().toISOString(),
     });
@@ -148,9 +148,9 @@ export class KvRepo implements Repo {
   async consumeInviteToken(token: string): Promise<boolean> {
     // ponytail: get-then-delete, not atomic. Double-consume race is theoretical
     // for one-time invite links; wrap in kv.atomic().check() if it ever matters.
-    const res = await kv.get(keys.inviteToken(token));
+    const res = await kv.get(keys.adminInviteToken(token));
     if (res.value == null) return false;
-    await kv.delete(keys.inviteToken(token));
+    await kv.delete(keys.adminInviteToken(token));
     return true;
   }
 

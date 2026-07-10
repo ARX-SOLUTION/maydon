@@ -27,7 +27,7 @@ export function registerAdminInvite(): void {
       createdBy: userId,
       createdAt: new Date().toISOString(),
     };
-    await kv.set(keys.inviteToken(token), record);
+    await kv.set(keys.adminInviteToken(token), record);
 
     const link = `https://t.me/${ctx.me.username}?start=admin_${token}`;
     await ctx.reply(
@@ -46,14 +46,14 @@ export function registerAdminInvite(): void {
     if (!userId) return;
 
     const token = payload.slice("admin_".length);
-    const res = await kv.get<InviteToken>(keys.inviteToken(token));
+    const res = await kv.get<InviteToken>(keys.adminInviteToken(token));
     if (!res.value) {
       await ctx.reply("Bu taklif havolasi yaroqsiz yoki ishlatilgan.");
       return;
     }
 
     // Consume the token first — one-time regardless of outcome.
-    await kv.delete(keys.inviteToken(token));
+    await kv.delete(keys.adminInviteToken(token));
 
     if (await getAdmin(userId)) {
       await ctx.reply("Siz allaqachon adminsiz.");

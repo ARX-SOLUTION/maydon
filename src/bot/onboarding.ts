@@ -3,9 +3,10 @@
  * Also owns the mini-app entry keyboard shown to onboarded users.
  */
 import { InlineKeyboard, Keyboard } from "grammy";
-import { getAdmin, getUser, kv, upsertUser } from "../kv.ts";
+import { getAdmin, getUser, kv, upsertUser, userApprovalStatus } from "../kv.ts";
 import type { User } from "../models.ts";
-import { bot } from "./client.ts";
+import { bot, botContext } from "./client.ts";
+import { notifyNewUserApproval } from "../services/notify.ts";
 
 // Local (module-owned) edit state for /profil name changes. Phone edits reuse the
 // existing contact-share flow, so only the name needs a pending-edit marker.
@@ -65,6 +66,15 @@ async function sendOnboardingPrompt(ctx: any, user: User): Promise<void> {
   );
 }
 
+async function notifyAdminsNewUser(user: User): Promise<void> {
+  for await (const entry of kv.list({ prefix: ["admins"] })) {
+    const adminId = entry.key[1];
+    if (typeof adminId === "number") {
+      await notifyNewUserApproval(botContext, adminId, user);
+    }
+  }
+}
+
 export function registerOnboarding(): void {
   // /start command
   bot.command("start", async (ctx: any, next: () => Promise<void>) => {
@@ -83,6 +93,7 @@ export function registerOnboarding(): void {
         username: ctx.from?.username,
         isBlocked: false,
         isActive: false,
+        approvalStatus: "pending",
         onboardingStep: "phone",
         createdAt: new Date().toISOString(),
       };
@@ -94,6 +105,19 @@ export function registerOnboarding(): void {
     // Regular (non-admin) users must finish onboarding before they can book.
     if (!isAdmin && !user.isActive) {
       await sendOnboardingPrompt(ctx, user);
+      return;
+    }
+
+    if (!isAdmin && user.isActive && userApprovalStatus(user) === "pending") {
+      await ctx.reply(
+        "✅ Ma'lumotlaringiz qabul qilindi.\n\nAdmin tasdiqlashini kuting. Tasdiqlangandan keyin maydonni band qilishingiz mumkin.",
+      );
+      return;
+    }
+    if (!isAdmin && user.isActive && userApprovalStatus(user) === "rejected") {
+      await ctx.reply(
+        `❌ Ro'yxatdan o'tishingiz rad etilgan.\nAdmin: ${user.approvalDecidedByName ?? "Noma'lum"}`,
+      );
       return;
     }
 
@@ -171,12 +195,18 @@ export function registerOnboarding(): void {
 
     user.name = text;
     user.isActive = true;
+    user.approvalStatus = "pending";
+    user.approvalDecidedBy = undefined;
+    user.approvalDecidedByName = undefined;
+    user.approvalDecidedAt = undefined;
     user.onboardingStep = undefined;
     await upsertUser(user);
 
+    await notifyAdminsNewUser(user);
+
     await ctx.reply(
-      `✅ Ro'yxatdan o'tish yakunlandi, ${user.name}!\n\nEndi maydonni band qilishingiz mumkin.`,
-      { reply_markup: miniAppKeyboard() },
+      `✅ Ro'yxatdan o'tish yakunlandi, ${user.name}!\n\nMa'lumotlaringiz adminga yuborildi. Admin tasdiqlashini kuting.`,
+      { reply_markup: { remove_keyboard: true } },
     );
   });
 

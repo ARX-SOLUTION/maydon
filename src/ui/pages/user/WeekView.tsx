@@ -5,8 +5,9 @@ import { AppShell, Card, PageHeader } from "../../components/UIComponents.tsx";
 import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
 import { Icon } from "../../components/LucideIcons.tsx";
 import { getDayAvailability } from "../../../services/availability.ts";
+import { timeToMinutes } from "../../../services/booking.ts";
 import { formatUzShortDay, toYmd } from "../../date.ts";
-import { getSettings } from "../../../kv.ts";
+import { getSettings, getUser, userApprovalStatus } from "../../../kv.ts";
 
 let botUsernamePromise: Promise<string | null> | null = null;
 
@@ -42,11 +43,32 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
   });
 
   const settings = await getSettings();
+  const user = userId === undefined ? null : await getUser(userId);
+  const canBook = user ? userApprovalStatus(user) === "approved" : false;
   let dayData: { slots: any[]; openTime: string; closeTime: string };
   try {
     dayData = await getDayAvailability(targetDate);
   } catch {
     dayData = { slots: [], openTime: "08:00", closeTime: "23:00" };
+  }
+
+  const minimumDuration = settings?.minDurMin ?? 60;
+  const bookableStarts = new Set<string>();
+  for (let i = 0; i < dayData.slots.length; i++) {
+    const first = dayData.slots[i];
+    if (first.isBusy) continue;
+    let total = 0;
+    let expectedStart = first.start;
+    for (let j = i; j < dayData.slots.length; j++) {
+      const slot = dayData.slots[j];
+      if (slot.isBusy || slot.start !== expectedStart) break;
+      total += timeToMinutes(slot.end) - timeToMinutes(slot.start);
+      expectedStart = slot.end;
+      if (total >= minimumDuration) {
+        bookableStarts.add(first.start);
+        break;
+      }
+    }
   }
 
   // Merge consecutive busy slots (same booking) into one segment; free slots stay 1:1.
@@ -112,6 +134,13 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
           </button>
         }
       />
+      {!canBook
+        ? (
+          <div class="mx-5 mb-4 rounded-[16px] bg-crm-primarySoft px-4 py-3 text-[13px] font-semibold text-crm-primary">
+            Admin tasdig'i kutilmoqda. Tasdiqlangandan keyin bo'sh vaqtni band qilishingiz mumkin.
+          </div>
+        )
+        : null}
       <script>
         {raw(`
         (function revealAdminLink() {
@@ -259,7 +288,8 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
               : null}
             {segments.map((seg) =>
               seg.kind === "free"
-                ? (
+                ? canBook && bookableStarts.has(seg.start)
+                  ? (
                   <button
                     hx-get={`/app/user/book-card?date=${targetDate}&start=${seg.start}`}
                     hx-target="body"
@@ -275,7 +305,15 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
                       Bron qilish
                     </span>
                   </button>
-                )
+                  )
+                  : (
+                    <div class="min-h-[52px] flex items-center gap-3 px-4 bg-crm-surfaceSoft text-crm-textMuted">
+                      <span class="text-[13px] font-bold tabular-nums w-[52px] shrink-0">{seg.start}</span>
+                      <span class="text-[12px] font-semibold">
+                        {canBook ? "Minimal davomiylikka yetarli vaqt yo'q" : "Tasdiq kutilmoqda"}
+                      </span>
+                    </div>
+                  )
                 : (
                   <div class="min-h-[64px] flex items-center justify-between px-4 bg-crm-primarySoft/45">
                     <div class="flex items-center gap-3">

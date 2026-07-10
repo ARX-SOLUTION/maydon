@@ -10,8 +10,9 @@ import {
   getUser,
   keys,
   kv,
+  userApprovalStatus,
 } from "../kv.ts";
-import type { Booking } from "../models.ts";
+import type { Booking, Settings } from "../models.ts";
 
 export interface BookingDecisionActor {
   id?: number;
@@ -145,14 +146,17 @@ export function validateSlot(
   const startMin = timeToMinutes(start);
   const endMin = timeToMinutes(end);
   if (startMin >= endMin) return "Tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak";
-  if (startMin % settings.snapMin !== 0 || endMin % settings.snapMin !== 0) {
+  const openMin = timeToMinutes(settings.openTime);
+  if (
+    (startMin - openMin) % settings.snapMin !== 0 ||
+    (endMin - openMin) % settings.snapMin !== 0
+  ) {
     return `Vaqt ${settings.snapMin} daqiqalik qadamda bo'lishi kerak`;
   }
   const duration = endMin - startMin;
   if (duration < settings.minDurMin) return `Minimal davomiylik ${settings.minDurMin} daqiqa`;
   if (duration > settings.maxDurMin) return `Maksimal davomiylik ${settings.maxDurMin} daqiqa`;
 
-  const openMin = timeToMinutes(settings.openTime);
   const closeMin = timeToMinutes(settings.closeTime);
   if (startMin < openMin || endMin > closeMin) {
     return `Ish vaqti tashqarisida (${settings.openTime}-${settings.closeTime})`;
@@ -174,6 +178,33 @@ export function minutesToTime(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+export function addMinutesToTime(start: string, durationMin: number): string | null {
+  if (!isValidTime(start) || !Number.isInteger(durationMin) || durationMin <= 0) {
+    return null;
+  }
+  const total = timeToMinutes(start) + durationMin;
+  if (total > 23 * 60 + 59) return null;
+  return minutesToTime(total);
+}
+
+export function getBookableDurations(
+  start: string,
+  settings: Pick<Settings, "openTime" | "closeTime" | "minDurMin" | "maxDurMin" | "snapMin">,
+): number[] {
+  if (!isValidTime(start) || validateSettings({ ...settings, horizonDays: 1 })) return [];
+
+  const startMin = timeToMinutes(start);
+  const closeMin = timeToMinutes(settings.closeTime);
+  const firstDuration = Math.ceil(settings.minDurMin / settings.snapMin) * settings.snapMin;
+  const maxDuration = Math.min(settings.maxDurMin, closeMin - startMin);
+  const durations: number[] = [];
+
+  for (let duration = firstDuration; duration <= maxDuration; duration += settings.snapMin) {
+    if (addMinutesToTime(start, duration)) durations.push(duration);
+  }
+  return durations;
 }
 
 export function overlaps(
@@ -211,6 +242,9 @@ export async function validateBookingRequest(
       valid: false,
       error: "Avval botda ro'yxatdan o'tishni yakunlang (/start bosing)",
     };
+  }
+  if (userApprovalStatus(user) !== "approved") {
+    return { valid: false, error: "Admin tasdiqlashini kuting" };
   }
 
   const slotError = validateSlot(date, start, end, settings);
@@ -345,23 +379,30 @@ async function rejectOverlappingPending(
 export async function rejectBooking(
   id: string,
   actor?: BookingDecisionActor,
-): Promise<void> {
+): Promise<{ success: boolean; error?: string; booking?: Booking }> {
   const booking = await kv.get<Booking>(keys.booking(id));
-  if (!booking.value) return;
+  if (!booking.value) return { success: false, error: "Booking not found" };
 
   const b = booking.value;
-  if (b.status !== "pending") return;
-  await kv.atomic()
+  if (b.status !== "pending") {
+    return { success: false, error: "Booking is not pending", booking: b };
+  }
+  const updated: Booking = {
+    ...b,
+    status: "rejected",
+    decidedAt: new Date().toISOString(),
+    decidedBy: actor?.id,
+    decidedByName: actor?.name,
+  };
+  const committed = await kv.atomic()
     .check(booking)
-    .set(keys.booking(id), {
-      ...b,
-      status: "rejected",
-      decidedAt: new Date().toISOString(),
-      decidedBy: actor?.id,
-      decidedByName: actor?.name,
-    })
+    .set(keys.booking(id), updated)
     .delete(keys.pendingByCreated(b.createdAt, id))
     .commit();
+  if (!committed.ok) {
+    return { success: false, error: "Booking parallel o'zgartirildi" };
+  }
+  return { success: true, booking: updated };
 }
 
 export async function cancelBooking(
@@ -482,7 +523,7 @@ export async function createBooking(
       .check(dayVersion)
       .set(keys.booking(id), booking)
       .set(keys.bookingByDay(date, id), id)
-      .set(keys.inviteToken(token), id)
+      .set(keys.bookingInviteToken(token), id)
       .set(keys.dayVersion(date), (dayVersion.value ?? 0) + 1);
     if (booking.status === "pending") {
       atomic.set(keys.pendingByCreated(createdAt, id), id);
@@ -506,7 +547,7 @@ export async function joinBooking(
   userId: number,
 ): Promise<{ success: boolean; error?: string }> {
   // 1. Get the booking ID from the token
-  const idEntry = await kv.get<string>(keys.inviteToken(token));
+  const idEntry = await kv.get<string>(keys.bookingInviteToken(token));
   if (!idEntry.value) {
     return { success: false, error: "Taklifnoma topilmadi" };
   }

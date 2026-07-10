@@ -6,8 +6,14 @@ export interface User {
   isBlocked: boolean;
   isActive: boolean; // true once onboarding (phone + name) is complete
   onboardingStep?: "phone" | "name"; // what the bot is waiting for next
+  approvalStatus?: UserApprovalStatus;
+  approvalDecidedBy?: number;
+  approvalDecidedByName?: string;
+  approvalDecidedAt?: string;
   createdAt: string; // ISO
 }
+
+export type UserApprovalStatus = "pending" | "approved" | "rejected";
 
 export interface Settings {
   openTime: string; // "08:00"

@@ -46,6 +46,38 @@ export async function notifyNewRequest(
   });
 }
 
+export async function notifyNewUserApproval(
+  bot: BotContext,
+  adminChatId: number,
+  user: User,
+): Promise<void> {
+  const text =
+    `👤 Yangi foydalanuvchi ro'yxatdan o'tdi\n\n` +
+    `Ism: ${user.name || "Noma'lum"}\n` +
+    `Telefon: ${user.phone || "Noma'lum"}\n\n` +
+    "Iltimos, foydalanuvchini tasdiqlang yoki rad eting.";
+  await bot.sendMessage(adminChatId, text, {
+    reply_markup: {
+      inline_keyboard: [[
+        { text: "✅ Tasdiqlash", callback_data: `approve_user:${user.telegramId}` },
+        { text: "❌ Rad etish", callback_data: `reject_user:${user.telegramId}` },
+      ]],
+    },
+  });
+}
+
+export async function notifyUserApprovalDecision(
+  bot: BotContext,
+  user: User,
+): Promise<void> {
+  if (!user.approvalStatus || !user.approvalDecidedByName) return;
+  const approved = user.approvalStatus === "approved";
+  const text = approved
+    ? `✅ Ro'yxatdan o'tishingiz tasdiqlandi.\n\nAdmin: ${user.approvalDecidedByName}\nEndi maydonni band qilishingiz mumkin.`
+    : `❌ Ro'yxatdan o'tishingiz rad etildi.\n\nAdmin: ${user.approvalDecidedByName}\nQo'shimcha ma'lumot uchun administrator bilan bog'laning.`;
+  await bot.sendMessage(user.telegramId, text);
+}
+
 export async function notifyUserQueued(
   bot: BotContext,
   userId: number,
@@ -144,4 +176,3 @@ export async function notifyUserCancelled(
 
   await bot.sendMessage(userId, text, { parse_mode: "Markdown" });
 }
-

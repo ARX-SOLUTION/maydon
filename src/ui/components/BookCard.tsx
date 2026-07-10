@@ -3,6 +3,7 @@ import { raw } from "hono/html";
 import type { FC } from "hono/jsx";
 import { Icon } from "./LucideIcons.tsx";
 import { getSettings } from "../../kv.ts";
+import { getBookableDurations } from "../../services/booking.ts";
 
 function formatDuration(durationMin: number): string {
   if (durationMin % 60 === 0) return `${durationMin / 60} soat`;
@@ -23,24 +24,14 @@ export const UserBookCard: FC<{ date?: string; start?: string }> = async ({
   }
 
   const settings = await getSettings() ?? {
+    openTime: "08:00",
+    closeTime: "23:00",
+    horizonDays: 7,
     minDurMin: 60,
     maxDurMin: 180,
     snapMin: 30,
   };
-  const snapMin = Number.isInteger(settings.snapMin) && settings.snapMin > 0
-    ? settings.snapMin
-    : 30;
-  const minDurMin = Number.isInteger(settings.minDurMin) && settings.minDurMin > 0
-    ? settings.minDurMin
-    : 60;
-  const maxDurMin = Number.isInteger(settings.maxDurMin) && settings.maxDurMin >= minDurMin
-    ? settings.maxDurMin
-    : Math.max(180, minDurMin);
-  const firstDuration = Math.ceil(minDurMin / snapMin) * snapMin;
-  const durations = Array.from(
-    { length: Math.floor((maxDurMin - firstDuration) / snapMin) + 1 },
-    (_, index) => firstDuration + index * snapMin,
-  ).filter((duration) => duration >= minDurMin && duration <= maxDurMin);
+  const durations = getBookableDurations(start, settings);
 
   return (
     <div
@@ -78,6 +69,9 @@ export const UserBookCard: FC<{ date?: string; start?: string }> = async ({
               
               <div>
                 <label class="block text-sm font-semibold text-crm-textMain mb-2">Qancha vaqt o'ynaysiz?</label>
+                {durations.length === 0
+                  ? <p class="text-sm font-medium text-crm-danger">Bu vaqtda minimal davomiylikka yetarli bo'sh vaqt yo'q.</p>
+                  : null}
                 <div class="grid grid-cols-2 gap-3">
                   {durations.map((duration, index) => (
                     <label class="relative flex cursor-pointer">
@@ -99,6 +93,7 @@ export const UserBookCard: FC<{ date?: string; start?: string }> = async ({
               <div class="pt-4 pb-safe">
                 <button 
                   type="submit" 
+                  disabled={durations.length === 0}
                   class="w-full h-14 bg-crm-primary text-white rounded-[16px] font-bold text-[15px] flex items-center justify-center gap-2 tap-scale"
                 >
                   <Icon name="checkCircle" class="w-5 h-5" />

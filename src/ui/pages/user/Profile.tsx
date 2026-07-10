@@ -8,7 +8,7 @@ import {
 } from "../../components/UIComponents.tsx";
 import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
 import { Icon } from "../../components/LucideIcons.tsx";
-import { getBookingsByUser, getUser } from "../../../kv.ts";
+import { getBookingsByUser, getUser, userApprovalStatus } from "../../../kv.ts";
 import { formatUzLongDate } from "../../date.ts";
 
 export const UserProfile: FC<{ userId: number }> = async ({ userId }) => {
@@ -22,6 +22,12 @@ export const UserProfile: FC<{ userId: number }> = async ({ userId }) => {
   const memberSince = user?.createdAt
     ? formatUzLongDate(new Date(user.createdAt))
     : null;
+  const approval = user ? userApprovalStatus(user) : "pending";
+  const approvalLabel = approval === "approved"
+    ? "Tasdiqlangan"
+    : approval === "rejected"
+    ? "Rad etilgan"
+    : "Admin tasdig'i kutilmoqda";
 
   return (
     <AppShell>
@@ -55,6 +61,16 @@ export const UserProfile: FC<{ userId: number }> = async ({ userId }) => {
               <span class="text-[12px] font-medium text-crm-textMuted mt-2 flex items-center gap-1.5">
                 <Icon name="calendar" class="w-4 h-4" />
                 A'zo bo'lgan sana: {memberSince}
+              </span>
+            )
+            : null}
+          <span class={`mt-3 inline-flex items-center rounded-full px-3 py-1 text-[12px] font-bold ${approval === "approved" ? "bg-crm-successSoft text-crm-success" : approval === "rejected" ? "bg-crm-dangerSoft text-crm-danger" : "bg-crm-primarySoft text-crm-primary"}`}>
+            {approvalLabel}
+          </span>
+          {user?.approvalDecidedByName
+            ? (
+              <span class="text-[12px] font-medium text-crm-textMuted mt-1">
+                Qaror bergan admin: {user.approvalDecidedByName}
               </span>
             )
             : null}

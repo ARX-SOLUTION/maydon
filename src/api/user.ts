@@ -4,9 +4,24 @@
 
 import { Hono } from "hono";
 import { authMiddleware } from "../auth.ts";
-import { getBooking, getBookingsByUser, getUser, upsertUser } from "../kv.ts";
+import {
+  getBooking,
+  getBookingsByUser,
+  getSettings,
+  getUser,
+  kv,
+  upsertUser,
+  userApprovalStatus,
+} from "../kv.ts";
 import { getAvailabilityRange } from "../services/availability.ts";
-import { cancelBooking, createBooking } from "../services/booking.ts";
+import {
+  addMinutesToTime,
+  cancelBooking,
+  createBooking,
+  getBookableDurations,
+} from "../services/booking.ts";
+import { notifyNewUserApproval } from "../services/notify.ts";
+import { botContext } from "../bot/client.ts";
 
 const api = new Hono();
 
@@ -17,6 +32,7 @@ api.use("/*", authMiddleware());
 api.get("/me", async (c: any) => {
   const auth = c.get("auth");
   let user = await getUser(auth.userId);
+  let created = false;
 
   if (!user) {
     // Create user on first visit
@@ -25,10 +41,21 @@ api.get("/me", async (c: any) => {
       name: auth.userName ?? "Unknown",
       isBlocked: false,
       isActive: false,
+      approvalStatus: "pending",
       onboardingStep: "phone",
       createdAt: new Date().toISOString(),
     };
     await upsertUser(user);
+    created = true;
+  }
+
+  if (created) {
+    for await (const entry of kv.list({ prefix: ["admins"] })) {
+      const adminId = entry.key[1];
+      if (typeof adminId === "number") {
+        await notifyNewUserApproval(botContext, adminId, user);
+      }
+    }
   }
 
   return c.json({
@@ -38,6 +65,10 @@ api.get("/me", async (c: any) => {
     phone: user.phone,
     isAdmin: auth.isAdmin,
     isActive: auth.isAdmin ? true : user.isActive,
+    approvalStatus: auth.isAdmin ? "approved" : userApprovalStatus(user),
+    approvalDecidedBy: user.approvalDecidedBy ?? null,
+    approvalDecidedByName: user.approvalDecidedByName ?? null,
+    approvalDecidedAt: user.approvalDecidedAt ?? null,
     role: auth.role ?? null,
     isOwner: auth.isOwner,
     memberSince: user.createdAt,
@@ -90,6 +121,8 @@ api.get("/bookings/my", async (c: any) => {
       end: b.end,
       status: b.status,
       createdAt: b.createdAt,
+      decidedBy: b.decidedBy ?? null,
+      decidedByName: b.decidedByName ?? null,
     })),
   });
 });
@@ -183,12 +216,17 @@ api.post("/requests", async (c: any) => {
   }
 
   // Calculate end time
-  const [hh, mm] = start.split(":").map(Number);
-  const duration = parseInt(durationStr, 10);
-  const totalMins = hh * 60 + mm + duration;
-  const endH = Math.floor(totalMins / 60) % 24;
-  const endM = totalMins % 60;
-  const end = `${endH.toString().padStart(2, "0")}:${endM.toString().padStart(2, "0")}`;
+  if (!/^\d+$/.test(durationStr)) {
+    return c.json({ error: "Davomiylik noto'g'ri" }, 400);
+  }
+  const duration = Number(durationStr);
+  const settings = await getSettings();
+  if (!settings) return c.json({ error: "Sozlamalar topilmadi" }, 500);
+  if (!getBookableDurations(start, settings).includes(duration)) {
+    return c.json({ error: "Bu boshlanish vaqti uchun tanlangan davomiylik mavjud emas" }, 400);
+  }
+  const end = addMinutesToTime(start, duration);
+  if (!end) return c.json({ error: "Bron vaqti ish vaqtidan oshib ketdi" }, 400);
 
   // Get user details
   const user = await getUser(auth.userId);

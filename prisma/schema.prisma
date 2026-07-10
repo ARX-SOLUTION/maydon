@@ -31,6 +31,12 @@ enum BookingSource {
   recurring
 }
 
+enum UserApprovalStatus {
+  pending
+  approved
+  rejected
+}
+
 model User {
   telegramId     BigInt    @id
   name           String
@@ -39,6 +45,10 @@ model User {
   isBlocked      Boolean   @default(false)
   isActive       Boolean   @default(false)
   onboardingStep String? // "phone" | "name" | null
+  approvalStatus UserApprovalStatus @default(pending)
+  approvalDecidedBy BigInt?
+  approvalDecidedByName String?
+  approvalDecidedAt DateTime?
   createdAt      DateTime  @default(now())
   bookings       Booking[]
 }
