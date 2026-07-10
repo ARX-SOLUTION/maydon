@@ -170,7 +170,54 @@ Deno.test("Tier 1.4: POST /api/admin/bookings/:id/cancel API returns success: tr
   assertEquals(body.success, true);
 });
 
-Deno.test("Tier 1.5: Bot notification function notifyUserCancelled correctly calls grammY sendMessage with correct Markdown message", async () => {
+Deno.test("Tier 1.5: Admin can cancel a pending request and the acting admin is recorded", async () => {
+  await clearKv();
+  await initDefaultSettings();
+
+  const adminId = 12345;
+  await addAdmin({
+    telegramId: adminId,
+    name: "Admin User",
+    role: "admin",
+    addedAt: new Date().toISOString(),
+  });
+  const userId = 99999;
+  await upsertUser({
+    telegramId: userId,
+    name: "Client",
+    isActive: true,
+    isBlocked: false,
+    approvalStatus: "approved",
+    createdAt: new Date().toISOString(),
+  });
+
+  const createResult = await createBooking(
+    userId,
+    "Client",
+    "+998901234567",
+    "2026-07-15",
+    "12:00",
+    "13:00",
+    "user",
+  );
+  assertExists(createResult.booking);
+  assertEquals(createResult.booking.status, "pending");
+
+  const authHeader = await getAuthHeader(adminId, "Admin User");
+  const res = await app.request(`/api/admin/bookings/${createResult.booking.id}/cancel`, {
+    method: "POST",
+    headers: { "Authorization": authHeader },
+  });
+
+  assertEquals(res.status, 200);
+  const cancelled = await getBooking(createResult.booking.id);
+  assertExists(cancelled);
+  assertEquals(cancelled.status, "cancelled");
+  assertEquals(cancelled.decidedBy, adminId);
+  assertEquals(cancelled.decidedByName, "Admin User");
+});
+
+Deno.test("Tier 1.6: Bot notification function notifyUserCancelled correctly calls grammY sendMessage with correct Markdown message", async () => {
   const sentMsgs: { chatId: number; text: string; options?: any }[] = [];
   const mockBot = {
     sendMessage: async (chatId: number, text: string, options?: any) => {

@@ -204,11 +204,21 @@ export function registerDecisions(): void {
   bot.callbackQuery(/^cancel:(.+)$/, async (ctx: any) => {
     if (!(await ensureAdmin(ctx))) return;
     const bookingId = ctx.match[1];
-    await cancelBooking(bookingId, {
+    const result = await cancelBooking(bookingId, {
       id: ctx.from?.id,
       name: ctx.from?.first_name ?? "Admin",
     });
+    if (!result.success) {
+      await ctx.answerCallbackQuery({ text: result.error ?? "Bekor qilib bo'lmadi" });
+      const current = await getBooking(bookingId);
+      if (current) await editDecided(ctx, current, statusHeader(current.status));
+      return;
+    }
     await ctx.answerCallbackQuery({ text: "⚠️ Bekor qilindi" });
+    if (result.booking) {
+      await editDecided(ctx, result.booking, "⚠️ Bekor qilindi", ctx.from?.first_name);
+      await notifyUserCancellation(result.booking);
+    }
   });
 
   async function handleUserApproval(ctx: any, status: "approved" | "rejected") {
