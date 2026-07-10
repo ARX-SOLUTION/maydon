@@ -2,7 +2,14 @@
  * KV Client & Key Helpers
  */
 
-import type { Admin, Booking, Recurring, Settings, User } from "./models.ts";
+import type {
+  Admin,
+  Booking,
+  Recurring,
+  Settings,
+  User,
+  UserApprovalStatus,
+} from "./models.ts";
 import { roleFor } from "./models.ts";
 
 const KV_PATH = Deno.env.get("KV_PATH") ?? "maydon_kv";
@@ -44,7 +51,8 @@ export const keys = {
     ["pending_by_created", createdAt, id] as const,
   dayVersion: (date: string) => ["day_version", date] as const,
   recurring: (id: string) => ["recurring", id] as const,
-  inviteToken: (token: string) => ["invite_tokens", token] as const,
+  adminInviteToken: (token: string) => ["admin_invite_tokens", token] as const,
+  bookingInviteToken: (token: string) => ["booking_invite_tokens", token] as const,
 };
 
 // ========== CRUD Helpers ==========
@@ -99,10 +107,46 @@ export async function upsertUser(user: User): Promise<void> {
 
 export async function getAllUsers(): Promise<User[]> {
   const users: User[] = [];
-  for await (const entry of kv.list<User>({ prefix: ["user"] })) {
+  for await (const entry of kv.list<User>({ prefix: ["users"] })) {
     users.push(entry.value);
   }
   return users;
+}
+
+export function userApprovalStatus(user: User): UserApprovalStatus {
+  // Users created before approval existed were already allowed to book.
+  return user.approvalStatus ?? (user.isActive ? "approved" : "pending");
+}
+
+export async function decideUserApproval(
+  telegramId: number,
+  status: Exclude<UserApprovalStatus, "pending">,
+  actor: { id: number; name: string },
+): Promise<{ success: boolean; user?: User; error?: string }> {
+  const entry = await kv.get<User>(keys.user(telegramId));
+  if (!entry.value) return { success: false, error: "Foydalanuvchi topilmadi" };
+
+  const current = userApprovalStatus(entry.value);
+  if (current !== "pending") {
+    return { success: false, user: entry.value, error: "Bu foydalanuvchi allaqachon hal qilingan" };
+  }
+
+  const updated: User = {
+    ...entry.value,
+    approvalStatus: status,
+    approvalDecidedBy: actor.id,
+    approvalDecidedByName: actor.name,
+    approvalDecidedAt: new Date().toISOString(),
+  };
+  const committed = await kv.atomic()
+    .check(entry)
+    .set(keys.user(telegramId), updated)
+    .commit();
+
+  if (!committed.ok) {
+    return { success: false, error: "Qaror parallel o'zgartirildi, qayta urinib ko'ring" };
+  }
+  return { success: true, user: updated };
 }
 
 export async function getBooking(id: string): Promise<Booking | null> {

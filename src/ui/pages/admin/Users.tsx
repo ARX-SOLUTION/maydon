@@ -22,6 +22,7 @@ function escHtml(s) {
 
 function userRow(u) {
   var isBlocked = u.isBlocked;
+  var approval = u.approvalStatus || (u.isActive ? "approved" : "pending");
   var btnClass = isBlocked 
     ? "bg-crm-primarySoft text-crm-primary" 
     : "bg-crm-dangerSoft text-crm-danger";
@@ -29,6 +30,11 @@ function userRow(u) {
   var btnText = isBlocked ? "Ochish" : "Bloklash";
   
   var noShowClass = u.noShows > 0 ? "text-crm-danger" : "text-crm-textMuted";
+  var approvalLabel = approval === "approved" ? "Tasdiqlangan" : approval === "rejected" ? "Rad etilgan" : "Tasdiq kutilmoqda";
+  var approvalClass = approval === "approved" ? "bg-crm-successSoft text-crm-success" : approval === "rejected" ? "bg-crm-dangerSoft text-crm-danger" : "bg-crm-primarySoft text-crm-primary";
+  var approvalActions = approval === "pending"
+    ? '<div class="flex gap-2 mt-2"><button onclick="decideUser(' + u.telegramId + ', \'approve\', this)" class="min-h-[40px] flex-1 rounded-[12px] bg-crm-successSoft text-crm-success font-semibold text-[12px]">Tasdiqlash</button><button onclick="decideUser(' + u.telegramId + ', \'reject\', this)" class="min-h-[40px] flex-1 rounded-[12px] bg-crm-dangerSoft text-crm-danger font-semibold text-[12px]">Rad etish</button></div>'
+    : (u.approvalDecidedByName ? '<div class="text-[12px] text-crm-textMuted mt-2">Admin: ' + escHtml(u.approvalDecidedByName) + '</div>' : '');
 
   return '<div class="bg-crm-surface rounded-[24px] p-4 shadow-soft flex flex-col gap-3">'
     + '<div class="flex items-center justify-between gap-3">'
@@ -45,6 +51,7 @@ function userRow(u) {
       + '<div>Jami: <span class="font-bold text-crm-text">' + u.totalBookings + '</span> ta</div>'
       + '<div>No-show: <span class="font-bold ' + noShowClass + '">' + u.noShows + '</span> ta</div>'
     + '</div>'
+    + '<div class="mt-1"><span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ' + approvalClass + '">' + approvalLabel + '</span>' + approvalActions + '</div>'
   + '</div>';
 }
 
@@ -109,6 +116,28 @@ window.toggleBlock = async function(id, btn) {
   } catch (e) {
     window.toast("Xatolik", "error");
     btn.innerHTML = oldHtml;
+    btn.disabled = false;
+  }
+};
+
+window.decideUser = async function(id, action, btn) {
+  if (action === "reject" && !confirm("Foydalanuvchini rad etasizmi?")) return;
+  btn.disabled = true;
+  try {
+    var res = await fetch("/api/admin/users/" + id + "/" + (action === "approve" ? "approve" : "reject"), {
+      method: "POST",
+      headers: auth()
+    });
+    var data = await res.json();
+    if (!res.ok) {
+      window.toast(data.error || "Xatolik yuz berdi", "error");
+      btn.disabled = false;
+      return;
+    }
+    window.toast(action === "approve" ? "Tasdiqlandi" : "Rad etildi", "success");
+    loadUsers();
+  } catch (e) {
+    window.toast("Xatolik yuz berdi", "error");
     btn.disabled = false;
   }
 };

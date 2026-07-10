@@ -9,6 +9,7 @@ import {
   getPendingRequests,
   getSettings,
   getUser,
+  decideUserApproval,
   kv,
 } from "../kv.ts";
 import {
@@ -26,6 +27,7 @@ import {
   notifyUserConfirmed,
   notifyUserQueued,
   notifyUserRejected,
+  notifyUserApprovalDecision,
 } from "../services/notify.ts";
 import type { Booking } from "../models.ts";
 import { bot, botContext } from "./client.ts";
@@ -138,7 +140,10 @@ export function registerDecisions(): void {
   bot.callbackQuery(/^confirm:(.+)$/, async (ctx: any) => {
     if (!(await ensureAdmin(ctx))) return;
     const bookingId = ctx.match[1];
-    const result = await confirmBooking(bookingId);
+    const result = await confirmBooking(bookingId, {
+      id: ctx.from?.id,
+      name: ctx.from?.first_name ?? "Admin",
+    });
     const booking = await getBooking(bookingId);
 
     if (result.success) {
@@ -178,7 +183,14 @@ export function registerDecisions(): void {
       return;
     }
 
-    await rejectBooking(bookingId);
+    const rejection = await rejectBooking(bookingId, {
+      id: ctx.from?.id,
+      name: ctx.from?.first_name ?? "Admin",
+    });
+    if (!rejection.success) {
+      await ctx.answerCallbackQuery({ text: rejection.error ?? ALREADY_DECIDED });
+      return;
+    }
     await ctx.answerCallbackQuery({ text: "❌ Rad etildi" });
     const booking = await getBooking(bookingId);
     if (booking) {
@@ -192,9 +204,53 @@ export function registerDecisions(): void {
   bot.callbackQuery(/^cancel:(.+)$/, async (ctx: any) => {
     if (!(await ensureAdmin(ctx))) return;
     const bookingId = ctx.match[1];
-    await cancelBooking(bookingId);
+    await cancelBooking(bookingId, {
+      id: ctx.from?.id,
+      name: ctx.from?.first_name ?? "Admin",
+    });
     await ctx.answerCallbackQuery({ text: "⚠️ Bekor qilindi" });
   });
+
+  async function handleUserApproval(ctx: any, status: "approved" | "rejected") {
+    if (!(await ensureAdmin(ctx))) return;
+    const userId = Number(ctx.match[1]);
+    const user = await getUser(userId);
+    if (!user) {
+      await ctx.answerCallbackQuery({ text: "Foydalanuvchi topilmadi" });
+      return;
+    }
+
+    const actor = { id: ctx.from.id as number, name: ctx.from.first_name ?? "Admin" };
+    const result = await decideUserApproval(userId, status, actor);
+    if (!result.success) {
+      await ctx.answerCallbackQuery({ text: result.error ?? "Bu foydalanuvchi allaqachon hal qilingan" });
+      const current = result.user ?? user;
+      await ctx.editMessageText(
+        formatUserApprovalDecision(current),
+      ).catch(() => {});
+      return;
+    }
+
+    await ctx.answerCallbackQuery({ text: status === "approved" ? "✅ Tasdiqlandi" : "❌ Rad etildi" });
+    await ctx.editMessageText(formatUserApprovalDecision(result.user!)).catch(() => {});
+    await notifyUserApprovalDecision(botContext, result.user!);
+  }
+
+  bot.callbackQuery(/^approve_user:(\d+)$/, async (ctx: any) => {
+    await handleUserApproval(ctx, "approved");
+  });
+
+  bot.callbackQuery(/^reject_user:(\d+)$/, async (ctx: any) => {
+    await handleUserApproval(ctx, "rejected");
+  });
+}
+
+function formatUserApprovalDecision(user: NonNullable<Awaited<ReturnType<typeof getUser>>>): string {
+  const approved = user.approvalStatus === "approved";
+  return `${approved ? "✅ Foydalanuvchi tasdiqlandi" : "❌ Foydalanuvchi rad etildi"}\n\n` +
+    `👤 ${user.name}\n` +
+    `📞 ${user.phone ?? "Noma'lum"}\n` +
+    `👮 Admin: ${user.approvalDecidedByName ?? "Noma'lum"}`;
 }
 
 // Notify admins about new booking (called from API)

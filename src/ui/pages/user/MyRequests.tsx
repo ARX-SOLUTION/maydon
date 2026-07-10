@@ -75,6 +75,7 @@ export const UserRequests: FC<{ userId: number }> = async ({ userId }) => {
         info,
         queuePos,
         cancellable: b.status === "pending" || b.status === "confirmed",
+        decidedByName: b.decidedByName,
       };
     });
 
@@ -142,6 +143,13 @@ export const UserRequests: FC<{ userId: number }> = async ({ userId }) => {
                   >
                     <Icon name="xCircle" class="w-4 h-4" /> Bekor qilish
                   </button>
+                )
+                : null}
+              {req.decidedByName
+                ? (
+                  <div class="mt-3 pt-3 border-t border-crm-borderSoft text-[12px] font-medium text-crm-textMuted">
+                    Qaror bergan admin: <span class="font-bold text-crm-textMain">{req.decidedByName}</span>
+                  </div>
                 )
                 : null}
             </Card>

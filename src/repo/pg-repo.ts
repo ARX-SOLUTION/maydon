@@ -33,6 +33,10 @@ const toUser = (r: UserModel): User => ({
   isBlocked: r.isBlocked,
   isActive: r.isActive,
   onboardingStep: (r.onboardingStep ?? undefined) as User["onboardingStep"],
+  approvalStatus: r.approvalStatus,
+  approvalDecidedBy: r.approvalDecidedBy == null ? undefined : Number(r.approvalDecidedBy),
+  approvalDecidedByName: r.approvalDecidedByName ?? undefined,
+  approvalDecidedAt: r.approvalDecidedAt?.toISOString(),
   createdAt: r.createdAt.toISOString(),
 });
 
@@ -142,6 +146,10 @@ export class PgRepo implements Repo {
       isBlocked: u.isBlocked,
       isActive: u.isActive,
       onboardingStep: u.onboardingStep ?? null,
+      approvalStatus: u.approvalStatus ?? "pending",
+      approvalDecidedBy: toBig(u.approvalDecidedBy),
+      approvalDecidedByName: u.approvalDecidedByName ?? null,
+      approvalDecidedAt: u.approvalDecidedAt ? new Date(u.approvalDecidedAt) : null,
       createdAt: new Date(u.createdAt),
     };
     await prisma.user.upsert({

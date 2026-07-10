@@ -5,6 +5,7 @@
 import { Hono } from "hono";
 import { authMiddleware, requireAdmin, requireOwner } from "../auth.ts";
 import {
+  decideUserApproval,
   getAdmin,
   getAllRecurring,
   getPendingRequests,
@@ -91,7 +92,11 @@ api.post("/admin/bookings", async (c: any) => {
 // POST /api/admin/bookings/:id/confirm
 api.post("/admin/bookings/:id/confirm", async (c: any) => {
   const id = c.req.param("id");
-  const result = await confirmBooking(id);
+  const auth = c.get("auth");
+  const result = await confirmBooking(id, {
+    id: auth.userId,
+    name: auth.userName ?? "Admin",
+  });
 
   if (!result.success) {
     return c.json({ error: result.error }, 400);
@@ -105,7 +110,14 @@ api.post("/admin/bookings/:id/confirm", async (c: any) => {
 // POST /api/admin/bookings/:id/reject
 api.post("/admin/bookings/:id/reject", async (c: any) => {
   const id = c.req.param("id");
-  await rejectBooking(id);
+  const auth = c.get("auth");
+  const existing = await import("../kv.ts").then((m) => m.getBooking(id));
+  if (!existing) return c.json({ error: "Booking not found" }, 404);
+  if (existing.status !== "pending") {
+    return c.json({ error: "Booking is not pending" }, 400);
+  }
+  const result = await rejectBooking(id, { id: auth.userId, name: auth.userName ?? "Admin" });
+  if (!result.success) return c.json({ error: result.error }, 400);
 
   // TODO: Notify user with alternative slots
 
@@ -115,7 +127,11 @@ api.post("/admin/bookings/:id/reject", async (c: any) => {
 // POST /api/admin/bookings/:id/cancel
 api.post("/admin/bookings/:id/cancel", async (c: any) => {
   const id = c.req.param("id");
-  const result = await cancelBooking(id);
+  const auth = c.get("auth");
+  const result = await cancelBooking(id, {
+    id: auth.userId,
+    name: auth.userName ?? "Admin",
+  });
 
   if (!result.success) {
     return c.json({ error: result.error }, 400);
@@ -249,6 +265,48 @@ api.get("/admin/users", async (c: any) => {
   return c.json(reputationData);
 });
 
+async function notifyUserApprovalDecision(
+  userId: number,
+  status: "approved" | "rejected",
+  actorName: string,
+): Promise<void> {
+  const text = status === "approved"
+    ? `✅ Ro'yxatdan o'tishingiz tasdiqlandi.\n\nAdmin: ${actorName}\nEndi maydonni band qilishingiz mumkin.`
+    : `❌ Ro'yxatdan o'tishingiz rad etildi.\n\nAdmin: ${actorName}\nQo'shimcha ma'lumot uchun administrator bilan bog'laning.`;
+  try {
+    await bot.api.sendMessage(userId, text);
+  } catch (error) {
+    console.error("Failed to notify user about approval decision:", error);
+  }
+}
+
+async function decideUser(c: any, status: "approved" | "rejected") {
+  const telegramId = Number(c.req.param("id"));
+  if (!Number.isSafeInteger(telegramId) || telegramId <= 0) {
+    return c.json({ error: "Foydalanuvchi ID noto'g'ri" }, 400);
+  }
+  const auth = c.get("auth");
+  const user = await getUser(telegramId);
+  if (!user) return c.json({ error: "Foydalanuvchi topilmadi" }, 404);
+  if (!user.isActive) {
+    return c.json({ error: "Foydalanuvchi ro'yxatdan o'tishni yakunlamagan" }, 400);
+  }
+
+  const actorName = auth.userName ?? "Admin";
+  const result = await decideUserApproval(telegramId, status, {
+    id: auth.userId,
+    name: actorName,
+  });
+  if (!result.success) {
+    return c.json({ error: result.error, user: result.user }, 409);
+  }
+  await notifyUserApprovalDecision(telegramId, status, actorName);
+  return c.json({ success: true, user: result.user });
+}
+
+api.post("/admin/users/:id/approve", (c: any) => decideUser(c, "approved"));
+api.post("/admin/users/:id/reject", (c: any) => decideUser(c, "rejected"));
+
 // POST /api/admin/users/:id/toggle-block
 api.post("/admin/users/:id/toggle-block", async (c: any) => {
   const telegramId = parseInt(c.req.param("id"));
@@ -290,7 +348,7 @@ api.get("/admin/admins", requireOwner(), async (c: any) => {
 api.post("/admin/admins/invite", requireOwner(), async (c: any) => {
   const auth = c.get("auth");
   const token = crypto.randomUUID();
-  await kv.set(keys.inviteToken(token), {
+  await kv.set(keys.adminInviteToken(token), {
     createdBy: auth.userId,
     createdAt: new Date().toISOString(),
   });
