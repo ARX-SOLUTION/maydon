@@ -107,8 +107,17 @@ export async function upsertUser(user: User): Promise<void> {
 
 export async function getAllUsers(): Promise<User[]> {
   const users: User[] = [];
-  for await (const entry of kv.list<User>({ prefix: ["users"] })) {
-    users.push(entry.value);
+  const seen = new Set<number>();
+
+  // `users` is the canonical namespace. Read the old singular namespace too so
+  // users created before the prefix fix remain visible to admins after deploy.
+  for (const prefix of [["users"], ["user"]] as const) {
+    for await (const entry of kv.list<User>({ prefix })) {
+      const user = entry.value;
+      if (!user || seen.has(user.telegramId)) continue;
+      seen.add(user.telegramId);
+      users.push(user);
+    }
   }
   return users;
 }

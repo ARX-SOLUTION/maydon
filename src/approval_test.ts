@@ -150,3 +150,19 @@ Deno.test("admin approval endpoint records the acting admin and rejects duplicat
   });
   assertEquals(duplicate.status, 409);
 });
+
+Deno.test("admin user listing includes legacy singular-prefix users without duplicates", async () => {
+  await clearKv();
+  const legacyUser = {
+    telegramId: 7010,
+    name: "Legacy User",
+    isBlocked: false,
+    isActive: false,
+    createdAt: new Date().toISOString(),
+  };
+  await kv.set(["user", legacyUser.telegramId], legacyUser);
+  await upsertUser({ ...legacyUser, approvalStatus: "pending" });
+
+  const users = await getAllUsers();
+  assertEquals(users.filter((user) => user.telegramId === 7010).length, 1);
+});
