@@ -79,6 +79,7 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
       start: string;
       end: string;
       bookingId?: string;
+      bookedBy?: string;
       userId?: number | null;
       participantCount?: number;
       inviteToken?: string;
@@ -101,6 +102,7 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
         start: slot.start,
         end: slot.end,
         bookingId: slot.bookingId,
+        bookedBy: slot.bookedBy,
         userId: slot.userId,
         participantCount: slot.participantCount,
         inviteToken: userId !== undefined && slot.userId === userId
@@ -323,7 +325,7 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
                       <div class="flex flex-col min-w-0">
                         <span class="flex items-center gap-1.5 text-[12px] font-semibold text-crm-primary">
                           <Icon name="profile" class="w-4 h-4 shrink-0" />
-                          <span class="truncate">Band</span>
+                          <span class="truncate">{seg.bookedBy ?? "Band"}</span>
                         </span>
                         {seg.participantCount !== undefined && seg.participantCount > 0 && (
                           <span class="text-[11px] font-medium text-crm-primary/70 mt-0.5">
