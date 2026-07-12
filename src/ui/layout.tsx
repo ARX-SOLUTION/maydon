@@ -8,11 +8,9 @@ const inlineStyles = `
   -moz-osx-font-smoothing: grayscale;
 }
 body {
-  background:
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 32rem),
-    linear-gradient(180deg, #F8FAFC 0%, #EEF6F1 100%);
-  color: #0F172A;
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Inter', system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
   touch-action: manipulation;
@@ -61,10 +59,49 @@ p { text-wrap: pretty; }
 const clientScript = `
 // Initialize Telegram Web App
 if (window.Telegram?.WebApp) {
-  window.Telegram.WebApp.ready();
-  window.Telegram.WebApp.expand();
-  window.Telegram.WebApp.setHeaderColor('#F8FAFC');
-  window.Telegram.WebApp.setBackgroundColor('#F8FAFC');
+  const twa = window.Telegram.WebApp;
+  twa.ready();
+  twa.expand();
+  
+  // Set theme data manually to CSS variables
+  const themeParams = twa.themeParams;
+  if (themeParams.bg_color) document.documentElement.style.setProperty('--bg-color', themeParams.bg_color);
+  if (themeParams.section_bg_color) document.documentElement.style.setProperty('--section-bg-color', themeParams.section_bg_color);
+  if (themeParams.secondary_bg_color) document.documentElement.style.setProperty('--secondary-bg-color', themeParams.secondary_bg_color);
+  if (themeParams.text_color) document.documentElement.style.setProperty('--text-color', themeParams.text_color);
+  if (themeParams.subtitle_text_color) document.documentElement.style.setProperty('--subtitle-text-color', themeParams.subtitle_text_color);
+  if (themeParams.hint_color) document.documentElement.style.setProperty('--hint-color', themeParams.hint_color);
+  if (themeParams.button_color) document.documentElement.style.setProperty('--button-color', themeParams.button_color);
+  if (themeParams.button_text_color) document.documentElement.style.setProperty('--button-text-color', themeParams.button_text_color);
+  if (themeParams.header_bg_color) document.documentElement.style.setProperty('--header-bg-color', themeParams.header_bg_color);
+  
+  if (twa.colorScheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+
+  twa.setHeaderColor(themeParams.header_bg_color || 'bg_color');
+  twa.setBackgroundColor(themeParams.bg_color || 'bg_color');
+  
+  // Re-apply if theme changes
+  twa.onEvent('themeChanged', function() {
+    if (twa.colorScheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+    const tp = twa.themeParams;
+    if (tp.bg_color) document.documentElement.style.setProperty('--bg-color', tp.bg_color);
+    if (tp.section_bg_color) document.documentElement.style.setProperty('--section-bg-color', tp.section_bg_color);
+    if (tp.secondary_bg_color) document.documentElement.style.setProperty('--secondary-bg-color', tp.secondary_bg_color);
+    if (tp.text_color) document.documentElement.style.setProperty('--text-color', tp.text_color);
+    if (tp.subtitle_text_color) document.documentElement.style.setProperty('--subtitle-text-color', tp.subtitle_text_color);
+    if (tp.hint_color) document.documentElement.style.setProperty('--hint-color', tp.hint_color);
+    if (tp.button_color) document.documentElement.style.setProperty('--button-color', tp.button_color);
+    if (tp.button_text_color) document.documentElement.style.setProperty('--button-text-color', tp.button_text_color);
+    if (tp.header_bg_color) document.documentElement.style.setProperty('--header-bg-color', tp.header_bg_color);
+  });
 }
 
 // HTMX config — inject auth header
@@ -261,7 +298,7 @@ export const Layout: FC = ({ children }) => (
         crossorigin="anonymous"
       />
       <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
         rel="stylesheet"
       />
       <script src="https://telegram.org/js/telegram-web-app.js"></script>

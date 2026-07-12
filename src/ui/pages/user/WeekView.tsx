@@ -1,7 +1,8 @@
 /** @jsxImportSource hono/jsx */
 import { raw } from "hono/html";
 import type { FC } from "hono/jsx";
-import { AppShell, Card, PageHeader } from "../../components/UIComponents.tsx";
+import { AppShell, Card } from "../../components/UIComponents.tsx";
+import { UserAppHeader } from "../../components/user/UserAppHeader.tsx";
 import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
 import { Icon } from "../../components/LucideIcons.tsx";
 import { getDayAvailability } from "../../../services/availability.ts";
@@ -118,10 +119,11 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
 
   return (
     <AppShell>
-      <PageHeader
-        title="Jadval"
-        subtitle={`${days[0].display} - ${days[days.length - 1].display}`}
-        rightNode={
+      <UserAppHeader 
+        title="BronQilish" 
+        subtitle="Maydon band qilish tizimi" 
+      />
+      <div id="adminPanelLinkContainer" class="hidden px-5 pt-4">
           <button
             id="adminPanelLink"
             hx-get="/app/admin/requests"
@@ -129,12 +131,12 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
             hx-push-url="true"
             aria-label="Boshqaruv paneli"
             onclick="localStorage.setItem('maydon_role_override', 'admin')"
-            class="hidden min-w-[44px] min-h-[44px] rounded-full bg-crm-primarySoft text-crm-primary items-center justify-center tap-scale focus-ring"
+            class="hidden w-full h-[44px] rounded-2xl bg-crm-primarySoft text-crm-primary items-center justify-center tap-scale focus-ring font-semibold text-[14px] gap-2"
           >
-            <Icon name="settings" class="w-5 h-5" />
+            <Icon name="settings" class="w-4 h-4" />
+            Admin paneliga o'tish
           </button>
-        }
-      />
+      </div>
       {!canBook
         ? (
           <div class="mx-5 mb-4 rounded-[16px] bg-crm-primarySoft px-4 py-3 text-[13px] font-semibold text-crm-primary">
@@ -146,12 +148,23 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
         {raw(`
         (function revealAdminLink() {
           var link = document.getElementById('adminPanelLink');
-          if (!link) return;
+          var container = document.getElementById('adminPanelLinkContainer');
+          if (!link || !container) return;
+          
+          function showAdmin() {
+            container.classList.remove('hidden');
+            link.classList.remove('hidden');
+            link.classList.add('flex');
+          }
+          function hideAdmin() {
+            container.classList.add('hidden');
+            link.classList.add('hidden');
+            link.classList.remove('flex');
+          }
           
           // Synchronous fast-path
           if (localStorage.getItem('maydon_is_admin') === 'true') {
-            link.classList.remove('hidden');
-            link.classList.add('flex');
+            showAdmin();
           }
           
           // Background sync to update cache
@@ -163,13 +176,8 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
               if (data.isOwner) localStorage.setItem('maydon_is_owner', 'true');
               else localStorage.removeItem('maydon_is_owner');
               
-              if (data.isAdmin) {
-                link.classList.remove('hidden');
-                link.classList.add('flex');
-              } else {
-                link.classList.add('hidden');
-                link.classList.remove('flex');
-              }
+              if (data.isAdmin) showAdmin();
+              else hideAdmin();
             }).catch(function(){});
         })();
       `)}
@@ -221,7 +229,7 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
         </script>
 
         {/* Date selector */}
-        <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-2 gsap-stagger">
+        <div class="mt-4 flex gap-3 overflow-x-auto scrollbar-hide pb-2 gsap-stagger">
           {days.map((d) => (
             <button
               hx-get={`/app/user/week?date=${d.dateStr}`}
@@ -229,57 +237,62 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
               hx-push-url="true"
               aria-label={`${d.display} jadvalini ko'rish`}
               aria-pressed={d.active ? "true" : "false"}
-              class={`flex flex-col items-center justify-center min-w-[68px] h-[76px] rounded-[20px] tap-scale focus-ring ${
+              class={`flex flex-col items-center justify-center min-w-[72px] h-[84px] rounded-2xl tap-scale focus-ring transition-colors duration-200 ${
                 d.active
                   ? "bg-crm-primary text-white shadow-floating"
-                  : "bg-crm-surface text-crm-textMain shadow-soft hover:shadow-softHover"
+                  : "bg-crm-surface text-crm-textMain shadow-card border border-crm-borderSoft/50"
               }`}
             >
               <span
-                class={`text-[12px] font-semibold ${
-                  d.active ? "text-white/80" : "text-crm-textMuted"
+                class={`text-[13px] font-semibold tracking-wide ${
+                  d.active ? "text-white/90" : "text-crm-textMuted"
                 }`}
               >
                 {d.display.split(",")[0]}
               </span>
-              <span class="text-[20px] font-bold mt-0.5">
+              <span class="text-[22px] font-bold mt-0.5">
                 {d.display.split(",")[1]}
               </span>
               {d.isToday
                 ? (
                   <div
-                    class={`w-1 h-1 rounded-full mt-1 ${
+                    class={`w-1.5 h-1.5 rounded-full mt-1.5 ${
                       d.active ? "bg-white" : "bg-crm-primary"
                     }`}
                   >
                   </div>
                 )
-                : <div class="h-2"></div>}
+                : <div class="h-3"></div>}
             </button>
           ))}
         </div>
 
         {/* Timeline */}
         <Card class="p-0 overflow-hidden gsap-stagger">
-          <div class="p-4 border-b border-crm-borderSoft bg-crm-surfaceSoft flex justify-between items-center gap-3">
-            <span class="font-bold text-[15px]">Bo'sh vaqtlar</span>
-            <span class="text-[12px] font-medium text-crm-textMuted bg-crm-surface px-2 py-1 rounded-md shadow-sm">
-              {settings?.snapMin ?? 30} daqiqa
+          <div class="p-4 border-b border-crm-borderSoft/50 bg-crm-surface flex justify-between items-center gap-3">
+            <span class="font-bold text-[16px] text-crm-textMain">Vaqtlar jadvali</span>
+            <span class="text-[12px] font-medium text-crm-textMuted bg-crm-surfaceSoft/60 px-2 py-1 rounded-lg">
+              Interval: {settings?.snapMin ?? 30} daqiqa
             </span>
           </div>
-          <div class="px-4 py-2 border-b border-crm-borderSoft flex flex-wrap items-center gap-x-4 gap-y-2 bg-crm-surface">
+          <div class="px-4 py-2.5 border-b border-crm-borderSoft/50 flex flex-wrap items-center gap-x-4 gap-y-2 bg-crm-surfaceSoft/30">
             <span class="flex items-center gap-1.5 text-[11px] font-semibold text-crm-textMuted">
-              <span class="w-2.5 h-2.5 rounded-full bg-crm-successSoft shadow-[0_0_0_1px_rgba(22,163,74,0.35)]">
+              <span class="w-2.5 h-2.5 rounded-full bg-crm-success shadow-[0_0_0_2px_rgba(52,199,89,0.2)]">
               </span>{" "}
-              Bo'sh — bosing
+              Bo'sh
             </span>
             <span class="flex items-center gap-1.5 text-[11px] font-semibold text-crm-textMuted">
-              <span class="w-2.5 h-2.5 rounded-full bg-gray-200 border border-gray-300">
+              <span class="w-2.5 h-2.5 rounded-full bg-crm-surface border-2 border-crm-borderSoft/80">
               </span>{" "}
               Band
             </span>
+            <span class="flex items-center gap-1.5 text-[11px] font-semibold text-crm-textMuted">
+               <span class="w-2.5 h-2.5 rounded-full bg-crm-primary shadow-[0_0_0_2px_rgba(37,99,235,0.2)]">
+               </span>{" "}
+               So'rovingiz
+            </span>
           </div>
-          <div class="flex flex-col divide-y divide-crm-borderSoft">
+          <div class="flex flex-col p-3 gap-2 bg-crm-surface">
             {segments.length === 0
               ? (
                 <div class="p-8 text-center text-crm-textMuted text-sm font-medium">
@@ -296,47 +309,54 @@ export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = asyn
                     hx-target="body"
                     hx-swap="beforeend"
                     aria-label={`${seg.start} uchun bron qilish`}
-                    class="min-h-[52px] flex items-center gap-3 px-4 bg-crm-successSoft/45 hover:bg-crm-successSoft active:bg-crm-successSoft transition-colors duration-150 ease-out focus-ring text-left"
+                    class="min-h-[56px] flex items-center justify-between px-4 py-2 rounded-2xl bg-crm-successSoft border border-crm-success/20 text-left transition-colors tap-scale focus-ring group hover:bg-crm-success/10"
                   >
-                    <span class="text-[13px] font-bold text-crm-textMain tabular-nums w-[52px] shrink-0">
-                      {seg.start}
-                    </span>
-                    <span class="text-[12px] font-semibold text-crm-success flex items-center gap-1">
-                      <Icon name="plus" class="w-3.5 h-3.5" />
-                      Bron qilish
-                    </span>
+                    <div class="flex items-center gap-3">
+                      <span class="text-[14px] font-bold text-crm-success tabular-nums shrink-0">
+                        {seg.start}
+                      </span>
+                      <span class="text-[13px] font-medium text-crm-success/80">
+                        Bo'sh vaqt
+                      </span>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-crm-success flex items-center justify-center text-white shadow-[0_4px_12px_rgba(52,199,89,0.3)] transition-transform group-active:scale-95">
+                      <Icon name="plus" class="w-4 h-4 stroke-[3px]" />
+                    </div>
                   </button>
                   )
                   : (
-                    <div class="min-h-[52px] flex items-center gap-3 px-4 bg-crm-surfaceSoft text-crm-textMuted">
-                      <span class="text-[13px] font-bold tabular-nums w-[52px] shrink-0">{seg.start}</span>
-                      <span class="text-[12px] font-semibold">
+                    <div class="min-h-[56px] flex items-center gap-3 px-4 rounded-2xl bg-crm-surface border border-crm-borderSoft/50 opacity-60">
+                      <span class="text-[14px] font-bold text-crm-textMuted tabular-nums shrink-0">{seg.start}</span>
+                      <span class="text-[13px] font-medium text-crm-textMuted/70">
                         {canBook ? "Minimal davomiylikka yetarli vaqt yo'q" : "Tasdiq kutilmoqda"}
                       </span>
                     </div>
                   )
                 : (
-                  <div class="min-h-[64px] flex items-center justify-between px-4 bg-crm-primarySoft/45">
-                    <div class="flex items-center gap-3">
-                      <span class="text-[13px] font-bold text-crm-primary tabular-nums w-[92px] shrink-0">
-                        {seg.start} – {seg.end}
-                      </span>
-                      <div class="flex flex-col min-w-0">
-                        <span class="flex items-center gap-1.5 text-[12px] font-semibold text-crm-primary">
-                          <Icon name="profile" class="w-4 h-4 shrink-0" />
-                          <span class="truncate">{seg.bookedBy ?? "Band"}</span>
-                        </span>
-                        {seg.participantCount !== undefined && seg.participantCount > 0 && (
-                          <span class="text-[11px] font-medium text-crm-primary/70 mt-0.5">
-                            {seg.participantCount} kishi qo'shilgan
+                  <div class={`min-h-[64px] flex items-center justify-between px-4 py-2.5 rounded-2xl border ${seg.userId === userId ? 'bg-crm-primarySoft border-crm-primary/30' : 'bg-crm-surface border-crm-borderSoft shadow-sm'}`}>
+                    <div class="flex flex-col min-w-0 flex-1">
+                       <div class="flex items-center gap-2 mb-0.5">
+                         <span class={`text-[14px] font-bold tabular-nums shrink-0 ${seg.userId === userId ? 'text-crm-primary' : 'text-crm-textMain'}`}>
+                          {seg.start} – {seg.end}
+                         </span>
+                         {seg.userId === userId && (
+                           <span class="px-1.5 py-0.5 rounded-md bg-crm-primary text-white text-[10px] font-bold uppercase tracking-wider">Siz</span>
+                         )}
+                       </div>
+                       <div class="flex items-center gap-1.5 text-[13px] font-medium text-crm-textMuted">
+                         <Icon name="profile" class={`w-3.5 h-3.5 shrink-0 ${seg.userId === userId ? 'text-crm-primary/70' : 'text-crm-textMuted'}`} />
+                         <span class="truncate">{seg.bookedBy ?? "Band qilingan"}</span>
+                       </div>
+                       {seg.participantCount !== undefined && seg.participantCount > 0 && (
+                          <span class={`text-[11px] font-semibold mt-1 ${seg.userId === userId ? 'text-crm-primary/80' : 'text-crm-textMuted/70'}`}>
+                            {seg.participantCount} kishi ishtirok etmoqda
                           </span>
-                        )}
-                      </div>
+                       )}
                     </div>
                     {seg.inviteToken && botUsername && (
                       <button
                         data-invite-link={`https://t.me/${botUsername}/app?startapp=invite_${seg.inviteToken}`}
-                        class="hidden invite-copy-btn items-center justify-center p-2 rounded-full bg-crm-primary text-white shrink-0 tap-scale focus-ring"
+                        class="hidden invite-copy-btn flex items-center justify-center min-w-[36px] h-[36px] rounded-full bg-crm-primary text-white shrink-0 tap-scale focus-ring shadow-[0_4px_12px_rgba(37,99,235,0.3)]"
                         aria-label="Taklifnoma havolasini nusxalash"
                       >
                         <Icon name="copy" class="w-4 h-4" />
