@@ -20,6 +20,7 @@ registerCommands();
 
 export { bot };
 export {
+  freeAlternatives,
   notifyAdminsNewRequest,
   notifyUserConfirmation,
   notifyUserRejection,
