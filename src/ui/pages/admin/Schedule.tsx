@@ -6,12 +6,8 @@ import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
 import { Icon } from "../../components/LucideIcons.tsx";
 import { getDayAvailability } from "../../../services/availability.ts";
 import { getBookingsByDay, getSettings } from "../../../kv.ts";
-import {
-  dateFromYmd,
-  formatUzLongDate,
-  formatUzShortDay,
-  toYmd,
-} from "../../date.ts";
+import { dateFromYmd, formatUzLongDate, formatUzShortDay } from "../../date.ts";
+import { addCalendarDays, tashkentDate } from "../../../services/booking.ts";
 
 const scheduleScript = `
 function setManualPanel(open) {
@@ -121,15 +117,14 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
   { selectedDate },
 ) => {
   const settings = await getSettings();
-  const today = new Date();
-  const targetDateObj = selectedDate ? dateFromYmd(selectedDate) : today;
-  const targetDate = toYmd(targetDateObj);
+  const today = tashkentDate();
+  const targetDate = selectedDate ?? today;
+  const targetDateObj = dateFromYmd(targetDate);
   const horizon = Math.min(Math.max(settings?.horizonDays ?? 7, 3), 14);
 
   const days = Array.from({ length: horizon }).map((_, i) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() + i);
-    const dateStr = toYmd(d);
+    const dateStr = addCalendarDays(today, i);
+    const d = dateFromYmd(dateStr);
     return {
       dateStr,
       weekday: formatUzShortDay(d),

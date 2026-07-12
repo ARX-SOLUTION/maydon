@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 
-Deno.env.set("KV_PATH", `maydon_approval_test_${Date.now()}`);
+Deno.env.set("KV_PATH", `maydon_kv_approval_test_${Date.now()}`);
 Deno.env.set("TELEGRAM_BOT_TOKEN", "test-token-for-approval-spec");
 
 const {

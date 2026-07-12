@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 
-Deno.env.set("KV_PATH", `maydon_duration_test_${Date.now()}`);
+Deno.env.set("KV_PATH", `maydon_kv_duration_test_${Date.now()}`);
 
 const {
   addCalendarDays,

@@ -1,4 +1,4 @@
-Deno.env.set("KV_PATH", `maydon_test_${Date.now()}`);
+Deno.env.set("KV_PATH", `maydon_kv_test_${Date.now()}`);
 Deno.env.set("TELEGRAM_BOT_TOKEN", "test-token-for-auth-spec");
 import { bot } from "./bot/client.ts";
 
