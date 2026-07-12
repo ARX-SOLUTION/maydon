@@ -107,7 +107,9 @@ async function handleCancel(id, btn, date) {
 }
 
 async function cancelAdminBooking(id, date) {
-  var btn = document.querySelector('button[onclick*="cancelAdminBooking(\'' + id + '\'")') || 
+  // NB: this script is a backtick template literal — an inner \' collapses to a bare '
+  // and breaks the whole script. Use \\' so the emitted JS keeps a real \' escape.
+  var btn = document.querySelector('button[onclick*="cancelAdminBooking(\\'' + id + '\\'")') ||
             document.querySelector('button[onclick*="cancelAdminBooking(&#39;' + id + '&#39;")');
   await handleCancel(id, btn, date);
 }
