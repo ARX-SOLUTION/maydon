@@ -32,8 +32,10 @@ function userRow(u) {
   var noShowClass = u.noShows > 0 ? "text-crm-danger" : "text-crm-textMuted";
   var approvalLabel = approval === "approved" ? "Tasdiqlangan" : approval === "rejected" ? "Rad etilgan" : "Tasdiq kutilmoqda";
   var approvalClass = approval === "approved" ? "bg-crm-successSoft text-crm-success" : approval === "rejected" ? "bg-crm-dangerSoft text-crm-danger" : "bg-crm-primarySoft text-crm-primary";
+  // NB: this whole script lives in a backtick template literal, so an inner \' would
+  // collapse to a bare ' and break the generated JS. Use \\' to emit a real \' escape.
   var approvalActions = approval === "pending"
-    ? '<div class="flex gap-2 mt-2"><button onclick="decideUser(' + u.telegramId + ', \'approve\', this)" class="min-h-[40px] flex-1 rounded-[12px] bg-crm-successSoft text-crm-success font-semibold text-[12px]">Tasdiqlash</button><button onclick="decideUser(' + u.telegramId + ', \'reject\', this)" class="min-h-[40px] flex-1 rounded-[12px] bg-crm-dangerSoft text-crm-danger font-semibold text-[12px]">Rad etish</button></div>'
+    ? '<div class="flex gap-2 mt-2"><button onclick="decideUser(' + u.telegramId + ', \\'approve\\', this)" class="min-h-[40px] flex-1 rounded-[12px] bg-crm-successSoft text-crm-success font-semibold text-[12px]">Tasdiqlash</button><button onclick="decideUser(' + u.telegramId + ', \\'reject\\', this)" class="min-h-[40px] flex-1 rounded-[12px] bg-crm-dangerSoft text-crm-danger font-semibold text-[12px]">Rad etish</button></div>'
     : (u.approvalDecidedByName ? '<div class="text-[12px] text-crm-textMuted mt-2">Admin: ' + escHtml(u.approvalDecidedByName) + '</div>' : '');
 
   return '<div class="bg-crm-surface rounded-[24px] p-4 shadow-soft flex flex-col gap-3">'
