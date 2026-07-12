@@ -119,7 +119,15 @@ api.post("/admin/bookings/:id/reject", async (c: any) => {
   const result = await rejectBooking(id, { id: auth.userId, name: auth.userName ?? "Admin" });
   if (!result.success) return c.json({ error: result.error }, 400);
 
-  // TODO: Notify user with alternative slots
+  if (result.booking) {
+    try {
+      const { freeAlternatives, notifyUserRejection } = await import("../bot/handlers.ts");
+      const alternatives = await freeAlternatives(result.booking.date);
+      await notifyUserRejection(result.booking, "So'rov tasdiqlanmadi", alternatives);
+    } catch (e) {
+      console.error("Failed to notify user about rejection:", e);
+    }
+  }
 
   return c.json({ success: true });
 });

@@ -117,7 +117,7 @@ async function editDecided(
 }
 
 // Up to 5 free slot-ranges for a day, to offer as alternatives after a rejection.
-async function freeAlternatives(
+export async function freeAlternatives(
   date: string,
 ): Promise<Array<{ start: string; end: string }>> {
   try {
