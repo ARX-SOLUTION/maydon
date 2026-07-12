@@ -5,8 +5,8 @@ import { AppShell, Card, PageHeader } from "../../components/UIComponents.tsx";
 import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
 import { Icon } from "../../components/LucideIcons.tsx";
 import { getDayAvailability } from "../../../services/availability.ts";
-import { timeToMinutes } from "../../../services/booking.ts";
-import { formatUzShortDay, toYmd } from "../../date.ts";
+import { addCalendarDays, tashkentDate, timeToMinutes } from "../../../services/booking.ts";
+import { dateFromYmd, formatUzShortDay } from "../../date.ts";
 import { getSettings, getUser, userApprovalStatus } from "../../../kv.ts";
 
 let botUsernamePromise: Promise<string | null> | null = null;
@@ -25,13 +25,12 @@ function resolveBotUsername(): Promise<string | null> {
 export const UserWeekView: FC<{ selectedDate?: string; userId?: number }> = async (
   { selectedDate, userId },
 ) => {
-  const targetDateObj = selectedDate ? new Date(selectedDate) : new Date();
-  const targetDate = toYmd(targetDateObj);
+  const today = tashkentDate();
+  const targetDate = selectedDate ?? today;
 
   const days = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    const dateStr = toYmd(d);
+    const dateStr = addCalendarDays(today, i);
+    const d = dateFromYmd(dateStr);
     const dayName = formatUzShortDay(d);
     const dayNum = d.getDate();
     return {
