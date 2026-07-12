@@ -42,7 +42,7 @@ export const UserBookCard: FC<{ date?: string; start?: string }> = async ({
       {/* Backdrop */}
       <div 
         id="book-modal-backdrop" 
-        class="fixed inset-0 bg-black/40 opacity-0 transition-opacity" 
+        class="fixed inset-0 bg-crm-textMain/40 backdrop-blur-[4px] opacity-0 transition-opacity" 
         aria-hidden="true"
         onclick="closeBookCard()"
       ></div>
@@ -50,31 +50,31 @@ export const UserBookCard: FC<{ date?: string; start?: string }> = async ({
       {/* Bottom Sheet Modal */}
       <div 
         id="book-modal-sheet" 
-        class="fixed inset-x-0 bottom-0 bg-white rounded-t-[24px] shadow-2xl translate-y-full transition-transform"
+        class="fixed inset-x-0 bottom-0 bg-crm-surface/95 backdrop-blur-xl border-t border-crm-borderSoft/30 rounded-t-[32px] shadow-[0_-12px_40px_rgba(0,0,0,0.12)] translate-y-full transition-transform"
       >
-        <div class="flex flex-col items-center p-4">
-          <div class="w-12 h-1.5 bg-gray-300 rounded-full mb-4"></div>
+        <div class="flex flex-col items-center p-5 pb-safe">
+          <div class="w-12 h-1.5 bg-crm-borderSoft/80 rounded-full mb-6"></div>
           
           <div class="w-full">
-            <h2 class="text-xl font-bold text-crm-textMain mb-1">Bron qilish</h2>
-            <p class="text-sm text-crm-textMuted mb-6">{date} kungi {start} vaqti uchun</p>
+            <h2 class="text-[22px] font-bold text-crm-textMain tracking-tight mb-1">Bron qilish</h2>
+            <p class="text-[14px] text-crm-textMuted mb-6 font-medium">{date} kungi {start} vaqti uchun</p>
 
             <form 
               hx-post="/api/requests" 
               hx-swap="none"
-              class="space-y-4"
+              class="space-y-6"
             >
               <input type="hidden" name="date" value={date} />
               <input type="hidden" name="start" value={start} />
               
               <div>
-                <label class="block text-sm font-semibold text-crm-textMain mb-2">Qancha vaqt o'ynaysiz?</label>
+                <label class="block text-[14px] font-semibold text-crm-textMain mb-3">Qancha vaqt o'ynaysiz?</label>
                 {durations.length === 0
-                  ? <p class="text-sm font-medium text-crm-danger">Bu vaqtda minimal davomiylikka yetarli bo'sh vaqt yo'q.</p>
+                  ? <p class="text-[13px] font-medium text-crm-danger bg-crm-dangerSoft p-3 rounded-2xl">Bu vaqtda minimal davomiylikka yetarli bo'sh vaqt yo'q.</p>
                   : null}
                 <div class="grid grid-cols-2 gap-3">
                   {durations.map((duration, index) => (
-                    <label class="relative flex cursor-pointer">
+                    <label class="relative flex cursor-pointer group">
                       <input
                         type="radio"
                         name="duration"
@@ -82,7 +82,7 @@ export const UserBookCard: FC<{ date?: string; start?: string }> = async ({
                         class="peer sr-only"
                         checked={index === 0}
                       />
-                      <div class="w-full flex items-center justify-center p-3 rounded-xl border-2 border-crm-borderSoft bg-crm-surfaceSoft text-crm-textMain font-medium peer-checked:border-crm-primary peer-checked:bg-crm-primarySoft/30 transition-colors">
+                      <div class="w-full flex items-center justify-center py-3.5 px-3 rounded-[16px] border border-crm-borderSoft/80 bg-crm-surfaceSoft/60 text-crm-textMain font-semibold text-[15px] transition-all duration-200 peer-checked:border-crm-primary/40 peer-checked:bg-crm-primarySoft/50 peer-checked:text-crm-primary peer-checked:shadow-[0_4px_16px_rgba(37,99,235,0.12)] group-active:scale-[0.98]">
                         {formatDuration(duration)}
                       </div>
                     </label>
@@ -90,11 +90,11 @@ export const UserBookCard: FC<{ date?: string; start?: string }> = async ({
                 </div>
               </div>
 
-              <div class="pt-4 pb-safe">
+              <div class="pt-2">
                 <button 
                   type="submit" 
                   disabled={durations.length === 0}
-                  class="w-full h-14 bg-crm-primary text-white rounded-[16px] font-bold text-[15px] flex items-center justify-center gap-2 tap-scale"
+                  class="w-full h-14 bg-gradient-to-r from-crm-primary to-blue-500 text-white rounded-2xl font-bold text-[16px] flex items-center justify-center gap-2 tap-scale shadow-[0_8px_24px_rgba(37,99,235,0.25)] disabled:opacity-50 disabled:shadow-none"
                 >
                   <Icon name="checkCircle" class="w-5 h-5" />
                   So'rov yuborish

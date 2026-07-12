@@ -4,8 +4,8 @@ import {
   AppShell,
   Card,
   MetricCard,
-  PageHeader,
 } from "../../components/UIComponents.tsx";
+import { UserAppHeader } from "../../components/user/UserAppHeader.tsx";
 import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
 import { Icon } from "../../components/LucideIcons.tsx";
 import { getBookingsByUser, getUser, userApprovalStatus } from "../../../kv.ts";
@@ -31,12 +31,16 @@ export const UserProfile: FC<{ userId: number }> = async ({ userId }) => {
 
   return (
     <AppShell>
-      <PageHeader title="Profil" subtitle="Shaxsiy ma'lumotlaringiz" />
+      <UserAppHeader title="Profil" subtitle="Shaxsiy ma'lumotlaringiz" />
 
-      <div class="px-5 space-y-4">
-        <Card class="p-6 items-center text-center gsap-stagger">
-          <div class="w-20 h-20 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center mb-1">
-            <Icon name="profile" class="w-10 h-10" />
+      <div class="px-5 space-y-4 pt-4">
+        <Card class="p-6 items-center text-center gsap-stagger relative overflow-hidden border border-crm-borderSoft/50">
+          <div class="absolute inset-0 bg-gradient-to-b from-crm-primarySoft/30 to-transparent pointer-events-none"></div>
+          
+          <div class="relative w-24 h-24 rounded-full bg-crm-surface border-4 border-crm-surface shadow-soft flex items-center justify-center mb-2 z-10">
+            <div class="w-full h-full rounded-full bg-gradient-to-tr from-crm-primary to-blue-400 flex items-center justify-center text-white">
+              <span class="text-3xl font-bold">{name.charAt(0).toUpperCase()}</span>
+            </div>
           </div>
           <span class="text-[20px] font-extrabold text-crm-textMain">
             {name}
@@ -85,14 +89,17 @@ export const UserProfile: FC<{ userId: number }> = async ({ userId }) => {
           />
         </div>
 
-        <Card class="p-4 gsap-stagger flex-row items-start gap-3">
-          <div class="w-9 h-9 shrink-0 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center">
+        <div class="bg-crm-primarySoft/45 rounded-2xl p-4 gsap-stagger flex items-start gap-3 border border-crm-primary/10">
+          <div class="w-10 h-10 shrink-0 rounded-xl bg-crm-primary/15 text-crm-primary flex items-center justify-center shadow-sm">
             <Icon name="message" class="w-5 h-5" />
           </div>
-          <p class="text-[13px] font-medium text-crm-textMuted leading-relaxed">
-            Ism yoki telefonni o'zgartirish uchun Telegram botga /start yozing.
-          </p>
-        </Card>
+          <div class="flex flex-col">
+            <span class="text-[13px] font-bold text-crm-textMain mb-0.5">Ma'lumotlarni yangilash</span>
+            <p class="text-[12px] font-medium text-crm-textMuted leading-relaxed">
+              Ism yoki telefon raqamingizni o'zgartirish uchun Telegram botga o'tib <span class="bg-crm-surfaceSoft px-1.5 py-0.5 rounded text-crm-textMain font-mono text-[11px]">/start</span> buyrug'ini yuboring.
+            </p>
+          </div>
+        </div>
       </div>
 
       <RoleBottomNav role="user" activeId="profile" />

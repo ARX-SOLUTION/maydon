@@ -4,9 +4,9 @@ import type { FC } from "hono/jsx";
 import {
   AppShell,
   Card,
-  PageHeader,
   StatusBadge,
 } from "../../components/UIComponents.tsx";
+import { UserAppHeader } from "../../components/user/UserAppHeader.tsx";
 import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
 import { Icon } from "../../components/LucideIcons.tsx";
 import { getBookingsByUser, getPendingRequests } from "../../../kv.ts";
@@ -81,12 +81,12 @@ export const UserRequests: FC<{ userId: number }> = async ({ userId }) => {
 
   return (
     <AppShell>
-      <PageHeader
-        title="So'rovlarim"
-        subtitle="Sizning bron qilish so'rovlaringiz"
+      <UserAppHeader 
+        title="So'rovlarim" 
+        subtitle="Sizning bron qilish so'rovlaringiz" 
       />
 
-      <div class="px-5 space-y-4">
+      <div class="px-5 space-y-4 pt-4">
         {requests.length === 0
           ? (
             <Card class="p-8 text-center items-center text-crm-textMuted text-sm font-medium gsap-stagger">
@@ -107,10 +107,18 @@ export const UserRequests: FC<{ userId: number }> = async ({ userId }) => {
           : null}
         <div class="space-y-3">
           {requests.map((req) => (
-            <Card class="p-4 gsap-stagger" id={`req-${req.id}`}>
-              <div class="flex items-center justify-between">
+            <div class="bg-crm-surface rounded-3xl p-4 shadow-card border border-crm-borderSoft/50 gsap-stagger relative overflow-hidden" id={`req-${req.id}`}>
+              {/* Subtle status indicator edge */}
+              <div class={`absolute left-0 top-0 bottom-0 w-1 ${
+                req.status === 'pending' ? 'bg-crm-warning' : 
+                req.status === 'confirmed' ? 'bg-crm-success' : 
+                req.status === 'rejected' || req.status === 'cancelled' ? 'bg-crm-danger' : 
+                'bg-crm-textMuted'
+              }`}></div>
+              
+              <div class="flex items-center justify-between pl-1">
                 <div>
-                  <span class="block text-[14px] font-bold text-crm-textMain mb-1">
+                  <span class="block text-[15px] font-bold text-crm-textMain mb-1">
                     {req.date}
                   </span>
                   <div class="flex items-center text-[18px] font-bold tabular-nums">
@@ -125,7 +133,7 @@ export const UserRequests: FC<{ userId: number }> = async ({ userId }) => {
                   <StatusBadge status={req.info.badge} label={req.info.label} />
                   {req.status === "pending"
                     ? (
-                      <span class="text-[12px] font-semibold text-crm-textMuted mt-1.5 flex items-center">
+                      <span class="text-[12px] font-semibold text-crm-textMuted mt-1.5 flex items-center bg-crm-surfaceSoft px-2 py-0.5 rounded-md">
                         Navbat:{" "}
                         <span class="text-crm-primary ml-1 font-bold">
                           #{req.queuePos}
@@ -139,20 +147,22 @@ export const UserRequests: FC<{ userId: number }> = async ({ userId }) => {
                 ? (
                   <button
                     onclick={`cancelRequest('${req.id}', this)`}
-                    class="mt-3 pt-3 border-t border-crm-borderSoft w-full min-h-[44px] rounded-[14px] bg-crm-dangerSoft text-crm-danger font-semibold text-[13px] tap-scale focus-ring flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    class="mt-4 w-full h-[48px] rounded-2xl bg-crm-dangerSoft text-crm-danger font-semibold text-[14px] tap-scale focus-ring flex items-center justify-center gap-2 disabled:opacity-50 transition-colors hover:bg-crm-danger hover:text-white group"
                   >
-                    <Icon name="xCircle" class="w-4 h-4" /> Bekor qilish
+                    <Icon name="xCircle" class="w-4 h-4 transition-transform group-active:scale-90" /> 
+                    {req.status === "confirmed" ? "Bekor qilish" : "So'rovni bekor qilish"}
                   </button>
                 )
                 : null}
               {req.decidedByName
                 ? (
-                  <div class="mt-3 pt-3 border-t border-crm-borderSoft text-[12px] font-medium text-crm-textMuted">
-                    Qaror bergan admin: <span class="font-bold text-crm-textMain">{req.decidedByName}</span>
+                  <div class="mt-4 pt-3 border-t border-crm-borderSoft/50 flex items-center justify-between text-[12px] font-medium text-crm-textMuted">
+                    <span>Qaror bergan admin:</span> 
+                    <span class="font-bold text-crm-textMain bg-crm-surfaceSoft px-2 py-0.5 rounded-md">{req.decidedByName}</span>
                   </div>
                 )
                 : null}
-            </Card>
+            </div>
           ))}
         </div>
       </div>
