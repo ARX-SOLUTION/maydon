@@ -7,7 +7,7 @@ import { Icon } from "../../components/LucideIcons.tsx";
 import { getDayAvailability } from "../../../services/availability.ts";
 import { getBookingsByDay, getSettings } from "../../../kv.ts";
 import { dateFromYmd, formatUzLongDate, formatUzShortDay } from "../../date.ts";
-import { addCalendarDays, tashkentDate } from "../../../services/booking.ts";
+import { addCalendarDays, overlaps, tashkentDate } from "../../../services/booking.ts";
 
 const scheduleScript = `
 function setManualPanel(open) {
@@ -166,6 +166,18 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
 
   const selectedLabel = formatUzLongDate(targetDateObj);
 
+  const confirmedCount = bookings.filter((b) => b.status === "confirmed").length;
+  const pendingBookings = bookings.filter((b) => b.status === "pending");
+  const pendingCount = pendingBookings.length;
+  const busySlotCount = dayData.slots.filter((s: any) => s.isBusy).length;
+  const occupancyPct = dayData.slots.length > 0
+    ? Math.round((busySlotCount / dayData.slots.length) * 100)
+    : 0;
+  const freeMinutes = (dayData.slots.length - busySlotCount) * (settings?.snapMin ?? 30);
+  const freeLabel = freeMinutes >= 60
+    ? `${Math.floor(freeMinutes / 60)}s ${freeMinutes % 60 ? (freeMinutes % 60) + "d" : ""}`.trim()
+    : `${freeMinutes}d`;
+
   return (
     <AppShell>
       <PageHeader
@@ -286,6 +298,41 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
           </Card>
         </div>
 
+        <div class="grid grid-cols-2 gap-3 gsap-stagger">
+          <div class="bg-crm-surface rounded-[18px] shadow-soft p-3">
+            <span class="text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide">
+              Bugungi bronlar
+            </span>
+            <span class="block text-[24px] font-extrabold tabular-nums mt-0.5">
+              {confirmedCount}
+            </span>
+          </div>
+          <div class="bg-crm-surface rounded-[18px] shadow-soft p-3">
+            <span class="text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide">
+              Bandlik
+            </span>
+            <span class="block text-[24px] font-extrabold tabular-nums mt-0.5">
+              {occupancyPct}%
+            </span>
+          </div>
+          <div class="bg-crm-surface rounded-[18px] shadow-soft p-3">
+            <span class="text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide">
+              Bo'sh vaqt
+            </span>
+            <span class="block text-[24px] font-extrabold tabular-nums mt-0.5">
+              {freeLabel}
+            </span>
+          </div>
+          <div class="bg-crm-surface rounded-[18px] shadow-soft p-3">
+            <span class="text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide">
+              Pending
+            </span>
+            <span class={`block text-[24px] font-extrabold tabular-nums mt-0.5 ${pendingCount > 0 ? "text-crm-warning" : ""}`}>
+              {pendingCount}
+            </span>
+          </div>
+        </div>
+
         <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-2 gsap-stagger">
           {days.map((d) => (
             <a
@@ -350,6 +397,30 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                     const booking = slot.bookingId
                       ? bookingsById.get(slot.bookingId)
                       : null;
+                    // Availability only marks CONFIRMED bookings busy — a pending
+                    // request for this same slot is otherwise invisible on the
+                    // grid, so an admin manually booking over it would silently
+                    // orphan that request. Surface it (informational only; the
+                    // slot stays clickable, per "domain owns conflict handling").
+                    const pendingMatch = !slot.isBusy
+                      ? pendingBookings.find((b) => overlaps(slot.start, slot.end, b.start, b.end))
+                      : null;
+                    if (pendingMatch) {
+                      return (
+                        <button
+                          onclick={`openManualBooking('${targetDate}', '${slot.start}', '${slot.end}')`}
+                          class="flex-1 min-h-[40px] border-b border-crm-borderSoft border-dashed last:border-b-0 bg-crm-warningSoft/60 hover:bg-crm-warningSoft flex items-center justify-between px-3 focus-ring transition-colors"
+                          aria-label={`${slot.start} — ${pendingMatch.clientName ?? "kutilayotgan so'rov"}, qo'lda bron qo'shish`}
+                        >
+                          <span class="text-[12px] font-bold text-crm-warning flex items-center gap-1.5 min-w-0">
+                            <Icon name="clock" class="w-3.5 h-3.5 shrink-0" />
+                            <span class="truncate">
+                              {slot.start} · Kutilmoqda: {pendingMatch.clientName ?? "Noma'lum"}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    }
                     return slot.isBusy
                       ? (
                         <div class="flex-1 border-b border-crm-borderSoft border-dashed last:border-b-0 bg-crm-primarySoft/55 flex items-center justify-between gap-3 px-3">

@@ -108,6 +108,9 @@ api.post("/admin/bookings/:id/confirm", async (c: any) => {
 });
 
 // POST /api/admin/bookings/:id/reject
+// Body (optional): { reason?: string } — free text or one of the admin UI's
+// suggested Uzbek reasons. Falls back to the generic message when omitted, so
+// the bot's inline reject button (which can't collect free text) is unaffected.
 api.post("/admin/bookings/:id/reject", async (c: any) => {
   const id = c.req.param("id");
   const auth = c.get("auth");
@@ -116,14 +119,23 @@ api.post("/admin/bookings/:id/reject", async (c: any) => {
   if (existing.status !== "pending") {
     return c.json({ error: "Booking is not pending" }, 400);
   }
-  const result = await rejectBooking(id, { id: auth.userId, name: auth.userName ?? "Admin" });
+  let reason: string | undefined;
+  try {
+    const body = await c.req.json();
+    if (typeof body?.reason === "string" && body.reason.trim()) {
+      reason = body.reason.trim().slice(0, 200);
+    }
+  } catch {
+    // No/invalid JSON body — reject with no reason, same as before this endpoint accepted one.
+  }
+  const result = await rejectBooking(id, { id: auth.userId, name: auth.userName ?? "Admin" }, reason);
   if (!result.success) return c.json({ error: result.error }, 400);
 
   if (result.booking) {
     try {
       const { freeAlternatives, notifyUserRejection } = await import("../bot/handlers.ts");
       const alternatives = await freeAlternatives(result.booking.date);
-      await notifyUserRejection(result.booking, "So'rov tasdiqlanmadi", alternatives);
+      await notifyUserRejection(result.booking, reason || "So'rov tasdiqlanmadi", alternatives);
     } catch (e) {
       console.error("Failed to notify user about rejection:", e);
     }

@@ -8,7 +8,7 @@ import { getPendingRequests } from "../../../kv.ts";
 import { dateFromYmd, formatUzShortDate } from "../../date.ts";
 
 const actionScript = `
-async function handleAction(id, action, btn) {
+async function handleAction(id, action, btn, reason) {
   btn.disabled = true;
   var oldLabel = btn.innerHTML;
   btn.innerHTML = '<span class="inline-block w-4 h-4 rounded-full border-2 border-current/30 border-t-current animate-spin"></span> Kutilmoqda...';
@@ -17,13 +17,22 @@ async function handleAction(id, action, btn) {
     var initData = window.Telegram?.WebApp?.initData || '';
     var res = await fetch('/api/admin/bookings/' + id + '/' + action, {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + initData }
+      headers: Object.assign(
+        { 'Authorization': 'Bearer ' + initData },
+        reason ? { 'Content-Type': 'application/json' } : {}
+      ),
+      body: reason ? JSON.stringify({ reason: reason }) : undefined
     });
     var data = await res.json();
 
     if (res.ok && data.success) {
       var labels = { confirm: 'tasdiqlandi', reject: 'rad etildi', cancel: 'bekor qilindi' };
       window.toast("So'rov " + (labels[action] || 'yangilandi') + "!", 'success');
+      htmx.ajax('GET', '/app/admin/requests', '#app-content');
+    } else if (data.error === 'Slot conflict detected') {
+      // Same string services/booking.ts already returns on a losing race —
+      // give the admin the specific reason instead of a generic failure.
+      window.toast("Vaqt konflikti: bu oraliq boshqa bron bilan to'qnashdi.", 'error');
       htmx.ajax('GET', '/app/admin/requests', '#app-content');
     } else {
       window.toast(data.error || "Xatolik yuz berdi", 'error');
@@ -36,7 +45,70 @@ async function handleAction(id, action, btn) {
     btn.innerHTML = oldLabel;
   }
 }
+
+var rejectSheetRequestId = null;
+var rejectSheetReason = '';
+
+function openRejectSheet(id) {
+  rejectSheetRequestId = id;
+  rejectSheetReason = '';
+  var sheet = document.getElementById('rejectSheet');
+  var chips = document.querySelectorAll('.reject-reason-chip');
+  chips.forEach(function(c) { c.setAttribute('aria-pressed', 'false'); c.className = c.className.replace('bg-crm-primary text-white', 'bg-crm-surfaceSoft text-crm-textMain'); });
+  var custom = document.getElementById('rejectCustomNote');
+  if (custom) { custom.value = ''; custom.classList.add('hidden'); }
+  if (sheet) sheet.classList.remove('hidden');
+}
+
+function closeRejectSheet() {
+  var sheet = document.getElementById('rejectSheet');
+  if (sheet) sheet.classList.add('hidden');
+  rejectSheetRequestId = null;
+}
+
+function pickRejectReason(reason, chip) {
+  rejectSheetReason = reason;
+  var chips = document.querySelectorAll('.reject-reason-chip');
+  chips.forEach(function(c) {
+    var isActive = c === chip;
+    c.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    c.className = c.className.replace(
+      isActive ? 'bg-crm-surfaceSoft text-crm-textMain' : 'bg-crm-primary text-white',
+      isActive ? 'bg-crm-primary text-white' : 'bg-crm-surfaceSoft text-crm-textMain'
+    );
+  });
+  var custom = document.getElementById('rejectCustomNote');
+  if (!custom) return;
+  if (reason === 'other') {
+    custom.classList.remove('hidden');
+    custom.focus();
+  } else {
+    custom.classList.add('hidden');
+  }
+}
+
+function confirmReject(btn) {
+  var custom = document.getElementById('rejectCustomNote');
+  var reason = rejectSheetReason === 'other' ? (custom ? custom.value.trim() : '') : rejectSheetReason;
+  if (rejectSheetReason === 'other' && !reason) {
+    window.toast("Sababni yozing", 'error');
+    return;
+  }
+  var id = rejectSheetRequestId;
+  closeRejectSheet();
+  var cardBtn = document.querySelector('#req-' + id + ' [data-reject-btn]');
+  handleAction(id, 'reject', cardBtn || btn, reason || undefined);
+}
 `;
+
+function formatRequestAge(createdAt: string): string {
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(createdAt).getTime()) / 60000));
+  if (minutes < 1) return "hozirgina";
+  if (minutes < 60) return `${minutes} daqiqa oldin`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} soat oldin`;
+  return `${Math.round(hours / 24)} kun oldin`;
+}
 
 export const AdminRequests: FC = async () => {
   const requests = await getPendingRequests();
@@ -53,6 +125,7 @@ export const AdminRequests: FC = async () => {
       date: displayDate,
       time: `${req.start} - ${req.end}`,
       queue: idx + 1,
+      age: formatRequestAge(req.createdAt),
     };
   });
 
@@ -77,6 +150,18 @@ export const AdminRequests: FC = async () => {
       />
 
       <div class="px-5 space-y-4">
+        {pendingRequests.length > 0
+          ? (
+            <div class="flex items-center gap-2 gsap-stagger">
+              <span class="inline-flex items-center justify-center min-w-[26px] h-[26px] px-2 rounded-full bg-crm-warningSoft text-crm-warning text-[13px] font-extrabold tabular-nums">
+                {pendingRequests.length}
+              </span>
+              <span class="text-[13px] font-semibold text-crm-textMuted">
+                {pendingRequests.length === 1 ? "kutilayotgan so'rov" : "ta kutilayotgan so'rov"}
+              </span>
+            </div>
+          )
+          : null}
         <div class="space-y-4">
           {pendingRequests.length === 0
             ? (
@@ -84,7 +169,7 @@ export const AdminRequests: FC = async () => {
                 <div class="w-12 h-12 rounded-full bg-crm-successSoft text-crm-success flex items-center justify-center mb-1">
                   <Icon name="checkCircle" class="w-6 h-6" />
                 </div>
-                <p>Kutilayotgan so'rovlar yo'q</p>
+                <p>Hozircha yangi so'rov yo'q</p>
               </Card>
             )
             : null}
@@ -108,6 +193,9 @@ export const AdminRequests: FC = async () => {
                 <div class="flex flex-col items-end">
                   <span class="text-[12px] font-bold px-2 py-1 bg-crm-surfaceSoft rounded-md text-crm-textMuted mb-1">
                     Navbat: #{req.queue}
+                  </span>
+                  <span class="text-[11px] font-medium text-crm-textMuted/70">
+                    {req.age}
                   </span>
                   {req.userId
                     ? (
@@ -136,13 +224,16 @@ export const AdminRequests: FC = async () => {
 
               <div class="flex gap-3">
                 <button
-                  onclick={`handleAction('${req.id}', 'reject', this)`}
+                  data-reject-btn
+                  onclick={`openRejectSheet('${req.id}')`}
+                  aria-label={`${req.user} so'rovini rad etish`}
                   class="flex-1 min-h-[44px] rounded-[14px] bg-crm-dangerSoft text-crm-danger font-semibold text-[14px] tap-scale focus-ring flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   <Icon name="xCircle" class="w-4 h-4 mr-1.5" /> Rad etish
                 </button>
                 <button
                   onclick={`handleAction('${req.id}', 'confirm', this)`}
+                  aria-label={`${req.user} so'rovini tasdiqlash`}
                   class="flex-1 min-h-[44px] rounded-[14px] bg-crm-primary text-white font-semibold text-[14px] tap-scale focus-ring shadow-floating flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   <Icon name="check" class="w-4 h-4 mr-1.5" /> Tasdiqlash
@@ -150,12 +241,99 @@ export const AdminRequests: FC = async () => {
               </div>
               <button
                 onclick={`handleAction('${req.id}', 'cancel', this)`}
+                aria-label={`${req.user} so'rovini butunlay bekor qilish`}
                 class="mt-3 w-full min-h-[44px] rounded-[14px] bg-crm-dangerSoft text-crm-danger font-semibold text-[14px] tap-scale focus-ring flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 <Icon name="xCircle" class="w-4 h-4" /> Bekor qilish
               </button>
             </Card>
           ))}
+        </div>
+      </div>
+
+      {/* Reject reason sheet — one instance, opened per-card via openRejectSheet(id).
+          Lightweight confirmation per ADMIN_DESIGN.md 17.2 (reject is not a strong
+          confirmation), but still asks *why* since a reason changes what the user
+          sees in their rejection notification. */}
+      <div
+        id="rejectSheet"
+        class="hidden fixed inset-0 z-[70]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rejectSheetTitle"
+      >
+        <div
+          class="absolute inset-0 bg-crm-textMain/40"
+          onclick="closeRejectSheet()"
+          aria-hidden="true"
+        >
+        </div>
+        <div class="absolute inset-x-0 bottom-0 bg-crm-surface rounded-t-[28px] p-5 pb-safe shadow-floating">
+          <div class="w-12 h-1.5 bg-crm-borderSoft/80 rounded-full mx-auto mb-4"></div>
+          <h2 id="rejectSheetTitle" class="text-[17px] font-bold text-crm-textMain">
+            So'rovni rad etish
+          </h2>
+          <p class="text-[13px] text-crm-textMuted mt-1 mb-4">
+            Foydalanuvchiga sabab ko'rsatiladimi?
+          </p>
+          <div class="flex flex-wrap gap-2 mb-3">
+            <button
+              type="button"
+              class="reject-reason-chip min-h-[42px] px-4 rounded-full bg-crm-surfaceSoft text-crm-textMain text-[13px] font-semibold tap-scale focus-ring"
+              aria-pressed="false"
+              onclick="pickRejectReason('Vaqt mavjud emas', this)"
+            >
+              Vaqt mavjud emas
+            </button>
+            <button
+              type="button"
+              class="reject-reason-chip min-h-[42px] px-4 rounded-full bg-crm-surfaceSoft text-crm-textMain text-[13px] font-semibold tap-scale focus-ring"
+              aria-pressed="false"
+              onclick="pickRejectReason(&quot;Jadval o'zgardi&quot;, this)"
+            >
+              Jadval o'zgardi
+            </button>
+            <button
+              type="button"
+              class="reject-reason-chip min-h-[42px] px-4 rounded-full bg-crm-surfaceSoft text-crm-textMain text-[13px] font-semibold tap-scale focus-ring"
+              aria-pressed="false"
+              onclick="pickRejectReason(&quot;Noto'g'ri ma'lumot&quot;, this)"
+            >
+              Noto'g'ri ma'lumot
+            </button>
+            <button
+              type="button"
+              class="reject-reason-chip min-h-[42px] px-4 rounded-full bg-crm-surfaceSoft text-crm-textMain text-[13px] font-semibold tap-scale focus-ring"
+              aria-pressed="false"
+              onclick="pickRejectReason('other', this)"
+            >
+              Boshqa sabab
+            </button>
+          </div>
+          <textarea
+            id="rejectCustomNote"
+            rows={2}
+            placeholder="Sababni yozing..."
+            aria-label="Rad etish sababi"
+            class="hidden w-full bg-crm-surfaceSoft rounded-[14px] px-4 py-3 text-[14px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 mb-3 resize-none"
+          >
+          </textarea>
+          <div class="flex gap-3 mt-2">
+            <button
+              type="button"
+              onclick="closeRejectSheet()"
+              class="flex-1 min-h-[48px] rounded-[16px] bg-crm-surfaceSoft text-crm-textMain font-bold tap-scale focus-ring"
+            >
+              Bekor qilish
+            </button>
+            <button
+              type="button"
+              onclick="confirmReject(this)"
+              class="flex-1 min-h-[48px] rounded-[16px] bg-crm-danger text-white font-bold tap-scale focus-ring shadow-floating"
+            >
+              Rad etishni tasdiqlash
+            </button>
+          </div>
         </div>
       </div>
 

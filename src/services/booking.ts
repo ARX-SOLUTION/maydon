@@ -379,6 +379,7 @@ async function rejectOverlappingPending(
 export async function rejectBooking(
   id: string,
   actor?: BookingDecisionActor,
+  reason?: string,
 ): Promise<{ success: boolean; error?: string; booking?: Booking }> {
   const booking = await kv.get<Booking>(keys.booking(id));
   if (!booking.value) return { success: false, error: "Booking not found" };
@@ -393,6 +394,7 @@ export async function rejectBooking(
     decidedAt: new Date().toISOString(),
     decidedBy: actor?.id,
     decidedByName: actor?.name,
+    rejectionReason: reason || undefined,
   };
   const committed = await kv.atomic()
     .check(booking)
