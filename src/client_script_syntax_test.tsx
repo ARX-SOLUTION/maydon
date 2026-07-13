@@ -11,6 +11,15 @@ import { Hono } from "hono";
 const { initDefaultSettings } = await import("./kv.ts");
 const { AdminUsers } = await import("./ui/pages/admin/Users.tsx");
 const { AdminSchedule } = await import("./ui/pages/admin/Schedule.tsx");
+const { AdminRequests } = await import("./ui/pages/admin/Requests.tsx");
+const { AdminRecurring } = await import("./ui/pages/admin/Recurring.tsx");
+const { AdminAdmins } = await import("./ui/pages/admin/Admins.tsx");
+const { AdminSettings } = await import("./ui/pages/admin/Settings.tsx");
+const { UserWeekView } = await import("./ui/pages/user/WeekView.tsx");
+const { UserRequests } = await import("./ui/pages/user/MyRequests.tsx");
+const { UserProfile } = await import("./ui/pages/user/Profile.tsx");
+const { UserBookCard } = await import("./ui/components/BookCard.tsx");
+const { addCalendarDays, tashkentDate } = await import("./services/booking.ts");
 
 await initDefaultSettings();
 
@@ -30,19 +39,32 @@ async function renderToHtml(node: unknown): Promise<string> {
   return await (await app.request("/")).text();
 }
 
-Deno.test("admin inline client scripts emit syntactically valid JS (no template-literal quote collapse)", async () => {
+Deno.test("admin + user inline client scripts emit syntactically valid JS (no template-literal quote collapse)", async () => {
+  const bookableDate = addCalendarDays(tashkentDate(), 1);
   const pages: Array<[string, string]> = [
     ["AdminUsers", await renderToHtml(<AdminUsers />)],
     ["AdminSchedule", await renderToHtml(<AdminSchedule />)],
+    ["AdminRequests", await renderToHtml(<AdminRequests />)],
+    ["AdminRecurring", await renderToHtml(<AdminRecurring />)],
+    ["AdminAdmins", await renderToHtml(<AdminAdmins />)],
+    ["AdminSettings", await renderToHtml(<AdminSettings />)],
+    ["UserWeekView", await renderToHtml(<UserWeekView />)],
+    ["UserRequests", await renderToHtml(<UserRequests userId={900001} />)],
+    ["UserProfile", await renderToHtml(<UserProfile userId={900001} />)],
+    ["UserBookCard", await renderToHtml(<UserBookCard date={bookableDate} start="12:00" />)],
   ];
 
   for (const [name, html] of pages) {
     const bodies = extractScriptBodies(html);
-    if (bodies.length === 0) throw new Error(`${name}: expected at least one inline <script>`);
+    // A page with zero inline scripts (e.g. Profile) is fine — nothing to parse.
     for (const body of bodies) {
       // `new Function` parses without executing — throws SyntaxError on invalid JS.
       // Before the fix this threw "Unexpected identifier 'approve'" / "missing )".
-      new Function(body);
+      try {
+        new Function(body);
+      } catch (e) {
+        throw new Error(`${name}: inline <script> is not valid JS — ${e}`);
+      }
     }
   }
 });

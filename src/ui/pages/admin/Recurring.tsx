@@ -10,6 +10,13 @@ import {
 import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
 import { Icon } from "../../components/LucideIcons.tsx";
 import { getAllRecurring } from "../../../kv.ts";
+import { addCalendarDays, calendarDayOfWeek, tashkentDate } from "../../../services/booking.ts";
+import { dateFromYmd, formatUzShortDate } from "../../date.ts";
+
+function nextOccurrence(dayOfWeek: number, today: string): string {
+  const diff = (dayOfWeek - calendarDayOfWeek(today) + 7) % 7;
+  return addCalendarDays(today, diff);
+}
 
 const dayNames = [
   "Yakshanba",
@@ -93,6 +100,7 @@ async function recurringRequest(btn, url, options, successMessage) {
 `;
 
 export const AdminRecurring: FC = async () => {
+  const today = tashkentDate();
   const recurring = (await getAllRecurring()).sort((a, b) =>
     a.dayOfWeek - b.dayOfWeek ||
     a.startTime.localeCompare(b.startTime) ||
@@ -284,6 +292,14 @@ export const AdminRecurring: FC = async () => {
                   </span>
                 </div>
               </div>
+
+              {rec.active
+                ? (
+                  <p class="text-[12px] font-medium text-crm-textMuted mt-2 px-1">
+                    Keyingi: {formatUzShortDate(dateFromYmd(nextOccurrence(rec.dayOfWeek, today)))}
+                  </p>
+                )
+                : null}
 
               <div class="flex gap-2 mt-3 pt-3 border-t border-crm-borderSoft">
                 <button

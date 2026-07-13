@@ -57,6 +57,64 @@ function userRow(u) {
   + '</div>';
 }
 
+var allUsers = [];
+var activeTab = "all";
+var searchQuery = "";
+var searchDebounce = null;
+
+function matchesTab(u, tab) {
+  var approval = u.approvalStatus || (u.isActive ? "approved" : "pending");
+  if (tab === "pending") return approval === "pending";
+  if (tab === "approved") return approval === "approved";
+  if (tab === "rejected") return approval === "rejected";
+  return true;
+}
+
+function matchesSearch(u, q) {
+  if (!q) return true;
+  q = q.toLowerCase();
+  return (u.name || "").toLowerCase().includes(q) ||
+    (u.phone || "").toLowerCase().includes(q) ||
+    (u.username || "").toLowerCase().includes(q);
+}
+
+function renderList() {
+  var list = document.getElementById("usersList");
+  if (!list) return;
+  var filtered = allUsers.filter(function(u) { return matchesTab(u, activeTab) && matchesSearch(u, searchQuery); });
+  if (filtered.length === 0) {
+    var msg = searchQuery
+      ? "Qidiruvga mos mijoz topilmadi"
+      : activeTab === "pending" ? "Tasdiqlash kutayotgan foydalanuvchi yo\\'q"
+      : activeTab === "rejected" ? "Rad etilgan foydalanuvchi yo\\'q"
+      : "Hozircha mijozlar yo\\'q";
+    list.innerHTML = '<div class="bg-crm-surface rounded-[24px] p-8 shadow-soft text-center text-crm-textMuted text-sm font-medium flex flex-col items-center"><div class="w-12 h-12 rounded-full bg-crm-surfaceSoft flex items-center justify-center text-crm-textMuted mb-3">' + PROFILE_SVG + '</div>' + msg + '</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(function(u) { return userRow(u); }).join("");
+}
+
+function setTab(tab, btn) {
+  activeTab = tab;
+  var tabs = document.querySelectorAll('[data-user-tab]');
+  tabs.forEach(function(t) {
+    var isActive = t === btn;
+    t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    t.className = isActive
+      ? 'min-h-[42px] px-4 rounded-full bg-crm-primary text-white text-[13px] font-bold tap-scale focus-ring shrink-0'
+      : 'min-h-[42px] px-4 rounded-full bg-crm-surface text-crm-textMuted text-[13px] font-semibold tap-scale focus-ring shrink-0 shadow-soft';
+  });
+  renderList();
+}
+
+function onUserSearch(value) {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(function() {
+    searchQuery = value;
+    renderList();
+  }, 300);
+}
+
 async function loadUsers() {
   var list = document.getElementById("usersList");
   if (!list) return;
@@ -68,18 +126,13 @@ async function loadUsers() {
       return;
     }
     var data = await res.json();
-    if (data.length === 0) {
-      list.innerHTML = '<div class="bg-crm-surface rounded-[24px] p-8 shadow-soft text-center text-crm-textMuted text-sm font-medium flex flex-col items-center"><div class="w-12 h-12 rounded-full bg-crm-background flex items-center justify-center text-crm-textMuted mb-3">' + PROFILE_SVG + '</div>Hozircha mijozlar yo\\'q</div>';
-      return;
-    }
-    
     // Sort logic: blocked users at bottom, then those with most no-shows
     data.sort((a, b) => {
       if (a.isBlocked !== b.isBlocked) return a.isBlocked ? 1 : -1;
       return b.noShows - a.noShows;
     });
-
-    list.innerHTML = data.map(function(u) { return userRow(u); }).join("");
+    allUsers = data;
+    renderList();
   } catch(e) {
     list.innerHTML = '<div class="text-center text-crm-danger text-sm font-medium py-8">Xatolik yuz berdi</div>';
   }
@@ -160,6 +213,62 @@ export const AdminUsers: FC = () => {
       />
 
       <div class="px-4 pb-[100px] mt-4 flex flex-col gap-3">
+        <div class="relative">
+          <Icon
+            name="search"
+            class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-crm-textMuted pointer-events-none"
+          />
+          <input
+            type="search"
+            inputmode="search"
+            placeholder="Ism, telefon yoki username"
+            aria-label="Mijozlarni qidirish"
+            oninput="onUserSearch(this.value)"
+            class="w-full h-[44px] pl-10 pr-4 bg-crm-surface rounded-[14px] text-[14px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/60 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+          />
+        </div>
+        <div class="flex gap-2 overflow-x-auto scrollbar-hide pb-1" role="tablist" aria-label="Mijoz holati">
+          <button
+            type="button"
+            data-user-tab
+            role="tab"
+            aria-selected="true"
+            onclick="setTab('all', this)"
+            class="min-h-[42px] px-4 rounded-full bg-crm-primary text-white text-[13px] font-bold tap-scale focus-ring shrink-0"
+          >
+            Barchasi
+          </button>
+          <button
+            type="button"
+            data-user-tab
+            role="tab"
+            aria-selected="false"
+            onclick="setTab('pending', this)"
+            class="min-h-[42px] px-4 rounded-full bg-crm-surface text-crm-textMuted text-[13px] font-semibold tap-scale focus-ring shrink-0 shadow-soft"
+          >
+            Tasdiq kutmoqda
+          </button>
+          <button
+            type="button"
+            data-user-tab
+            role="tab"
+            aria-selected="false"
+            onclick="setTab('approved', this)"
+            class="min-h-[42px] px-4 rounded-full bg-crm-surface text-crm-textMuted text-[13px] font-semibold tap-scale focus-ring shrink-0 shadow-soft"
+          >
+            Faol
+          </button>
+          <button
+            type="button"
+            data-user-tab
+            role="tab"
+            aria-selected="false"
+            onclick="setTab('rejected', this)"
+            class="min-h-[42px] px-4 rounded-full bg-crm-surface text-crm-textMuted text-[13px] font-semibold tap-scale focus-ring shrink-0 shadow-soft"
+          >
+            Rad etilgan
+          </button>
+        </div>
         <div id="usersList" class="flex flex-col gap-3">
           {/* Loaded via client-side script */}
         </div>

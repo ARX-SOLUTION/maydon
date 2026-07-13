@@ -63,6 +63,7 @@ export interface Booking {
   decidedAt?: string; // ISO
   decidedBy?: number; // Admin Telegram ID for an admin decision
   decidedByName?: string; // Snapshot for audit visibility if the admin is renamed/removed
+  rejectionReason?: string; // Admin-supplied reason, only set on status "rejected"
   inviteToken?: string; // For squad invitations
   participantIds?: number[]; // Array of user IDs who joined
 }

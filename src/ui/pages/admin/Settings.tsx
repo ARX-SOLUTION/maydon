@@ -5,6 +5,7 @@ import { AppShell, Card, PageHeader } from "../../components/UIComponents.tsx";
 import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
 import { Icon } from "../../components/LucideIcons.tsx";
 import { getSettings } from "../../../kv.ts";
+import { tashkentDateTimeKey } from "../../../services/booking.ts";
 
 const settingsScript = `
 async function saveSettings(btn) {
@@ -58,6 +59,7 @@ function backToBot() {
 `;
 
 export const AdminSettings: FC = async () => {
+  const currentLocalTime = tashkentDateTimeKey().split("T")[1];
   const settings = await getSettings() ?? {
     openTime: "08:00",
     closeTime: "23:00",
@@ -188,6 +190,25 @@ export const AdminSettings: FC = async () => {
             >
               <Icon name="check" class="w-5 h-5" /> Saqlash
             </button>
+          </Card>
+        </div>
+
+        <div class="gsap-stagger">
+          <h2 class="text-[15px] font-bold px-1 mb-2">Timezone</h2>
+          <Card class="p-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center shrink-0">
+                <Icon name="clock" class="w-5 h-5" />
+              </div>
+              <div class="flex-1">
+                <p class="text-[14px] font-bold text-crm-textMain">
+                  Asia/Tashkent (UTC+5)
+                </p>
+                <p class="text-[12px] text-crm-textMuted mt-0.5 tabular-nums">
+                  Hozirgi vaqt: {currentLocalTime}
+                </p>
+              </div>
+            </div>
           </Card>
         </div>
 
