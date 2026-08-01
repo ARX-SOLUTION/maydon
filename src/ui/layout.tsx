@@ -10,12 +10,16 @@ const inlineStyles = `
 body {
   background-color: var(--bg-color);
   color: var(--text-color);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
   touch-action: manipulation;
 }
-h1, h2, h3 { text-wrap: balance; }
+h1, h2, h3, .font-display {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
 p { text-wrap: pretty; }
 .tabular-nums { font-variant-numeric: tabular-nums; }
 .focus-ring:focus-visible {
@@ -57,6 +61,11 @@ p { text-wrap: pretty; }
 `;
 
 const clientScript = `
+// Check for low performance devices
+if ((navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 2) {
+  document.documentElement.classList.add('low-perf');
+}
+
 // Initialize Telegram Web App
 if (window.Telegram?.WebApp) {
   const twa = window.Telegram.WebApp;
@@ -111,7 +120,7 @@ document.body.addEventListener('htmx:configRequest', function(evt) {
   }
 });
 
-// Global Toast System (GSAP powered)
+// Global Toast System (Glass Surface + GSAP powered)
 window.toast = function(message, type) {
   type = type || 'info';
   var toastWrap = document.getElementById('toastWrap');
@@ -125,11 +134,15 @@ window.toast = function(message, type) {
     document.body.appendChild(toastWrap);
   }
   var box = document.createElement('div');
-  box.className = 'px-4 py-3 rounded-[18px] bg-crm-onPrimary/95 text-white shadow-floating text-sm font-bold pointer-events-auto touch-none w-[min(380px,100%)] select-none';
+  var iconSvg = type === 'success' 
+    ? '<svg class="w-5 h-5 text-crm-success shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+    : type === 'error'
+    ? '<svg class="w-5 h-5 text-crm-danger shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>'
+    : '<svg class="w-5 h-5 text-crm-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+
+  box.className = 'px-4 py-3 rounded-r-lg glass-panel text-crm-textMain shadow-floating text-[14px] font-bold pointer-events-auto touch-none w-[min(380px,100%)] select-none flex items-center gap-3 border border-crm-borderSoft/40';
   box.setAttribute('role', 'status');
-  if (type === 'error') box.className += ' !bg-crm-danger';
-  if (type === 'success') box.className += ' !bg-crm-success';
-  box.textContent = message;
+  box.innerHTML = iconSvg + '<span class="flex-1 min-w-0 truncate">' + message + '</span>';
   toastWrap.appendChild(box);
 
   var closeAnim;
@@ -298,7 +311,7 @@ export const Layout: FC = ({ children }) => (
         crossorigin="anonymous"
       />
       <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
         rel="stylesheet"
       />
       <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -317,3 +330,4 @@ export const Layout: FC = ({ children }) => (
     </body>
   </html>
 );
+

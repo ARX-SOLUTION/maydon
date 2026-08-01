@@ -125,11 +125,11 @@ export const AdminRecurring: FC = async () => {
 
       <div class="px-5 space-y-4">
         <div id="recurringFormPanel" class="hidden gsap-stagger">
-          <Card>
+          <Card class="glass-card rounded-r-md border border-crm-borderSoft/40">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <h2 class="text-[15px] font-bold">Doimiy bron qo'shish</h2>
-                <p class="text-[12px] text-crm-textMuted mt-1">
+                <h2 class="font-display text-[15px] font-extrabold">Doimiy bron qo'shish</h2>
+                <p class="text-[12px] text-crm-textMuted mt-0.5">
                   Cron har kuni kelgusi kunlar uchun bronlarni yaratadi.
                 </p>
               </div>
@@ -145,21 +145,21 @@ export const AdminRecurring: FC = async () => {
               <div>
                 <label
                   for="recClientName"
-                  class="block text-[12px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                  class="block text-[11px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                 >
                   Mijoz
                 </label>
                 <input
                   id="recClientName"
                   autocomplete="name"
-                  class="w-full h-[48px] bg-crm-surfaceSoft rounded-[14px] px-4 text-[15px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                  class="w-full h-[48px] glass-surface rounded-r-xs px-4 text-[15px] font-medium border border-crm-borderSoft/40 placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
                   placeholder="Masalan: Davron aka jamoasi"
                 />
               </div>
               <div>
                 <label
                   for="recPhone"
-                  class="block text-[12px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                  class="block text-[11px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                 >
                   Telefon
                 </label>
@@ -167,7 +167,7 @@ export const AdminRecurring: FC = async () => {
                   id="recPhone"
                   type="tel"
                   autocomplete="tel"
-                  class="w-full h-[48px] bg-crm-surfaceSoft rounded-[14px] px-4 text-[15px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
+                  class="w-full h-[48px] glass-surface rounded-r-xs px-4 text-[15px] font-medium border border-crm-borderSoft/40 placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
                   placeholder="+998 90 123 45 67"
                 />
               </div>
@@ -175,13 +175,13 @@ export const AdminRecurring: FC = async () => {
                 <div>
                   <label
                     for="recDay"
-                    class="block text-[11px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                    class="block text-[10px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                   >
                     Kun
                   </label>
                   <select
                     id="recDay"
-                    class="w-full h-[46px] bg-crm-surfaceSoft rounded-[14px] px-2 text-[13px] font-bold border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                    class="w-full h-[46px] glass-surface rounded-r-xs px-2 text-[13px] font-bold border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
                   >
                     {dayNames.map((day, index) => (
                       <option value={index} selected={index === 1}>
@@ -193,7 +193,7 @@ export const AdminRecurring: FC = async () => {
                 <div>
                   <label
                     for="recStart"
-                    class="block text-[11px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                    class="block text-[10px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                   >
                     Boshlanish
                   </label>
@@ -202,13 +202,13 @@ export const AdminRecurring: FC = async () => {
                     type="time"
                     value="18:00"
                     step="1800"
-                    class="w-full h-[46px] bg-crm-surfaceSoft rounded-[14px] px-2 text-[13px] font-bold border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
+                    class="w-full h-[46px] glass-surface rounded-r-xs px-2 text-[13px] font-bold border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
                   />
                 </div>
                 <div>
                   <label
                     for="recEnd"
-                    class="block text-[11px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                    class="block text-[10px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                   >
                     Tugash
                   </label>
@@ -217,14 +217,14 @@ export const AdminRecurring: FC = async () => {
                     type="time"
                     value="20:00"
                     step="1800"
-                    class="w-full h-[46px] bg-crm-surfaceSoft rounded-[14px] px-2 text-[13px] font-bold border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
+                    class="w-full h-[46px] glass-surface rounded-r-xs px-2 text-[13px] font-bold border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
                   />
                 </div>
               </div>
             </div>
             <button
               onclick="createRecurring(this)"
-              class="w-full min-h-[48px] rounded-[16px] bg-crm-primary text-white font-bold shadow-floating tap-scale focus-ring flex items-center justify-center gap-2"
+              class="w-full min-h-[48px] rounded-r-sm bg-crm-primary text-white font-display font-bold shadow-floating tap-scale focus-ring flex items-center justify-center gap-2"
             >
               <Icon name="check" class="w-5 h-5" /> Saqlash
             </button>
@@ -234,14 +234,14 @@ export const AdminRecurring: FC = async () => {
         <div class="space-y-3">
           {recurring.length === 0
             ? (
-              <Card class="p-8 text-center items-center text-crm-textMuted text-sm font-medium gsap-stagger">
-                <div class="w-12 h-12 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center mb-1">
+              <Card class="p-8 text-center items-center text-crm-textMuted text-sm font-medium gsap-stagger glass-card rounded-r-md border border-crm-borderSoft/40">
+                <div class="w-12 h-12 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center mb-1 shadow-soft">
                   <Icon name="refresh" class="w-6 h-6" />
                 </div>
-                <p>Hali doimiy bronlar yo'q</p>
+                <p class="font-display font-bold text-crm-textMain text-[16px]">Hali doimiy bronlar yo'q</p>
                 <button
                   onclick="setRecurringForm(true)"
-                  class="mt-2 min-h-[44px] rounded-[14px] px-4 bg-crm-primary text-white font-bold tap-scale focus-ring"
+                  class="mt-3 min-h-[44px] rounded-r-sm px-5 bg-crm-primary text-white font-display font-bold text-[14px] tap-scale focus-ring shadow-floating"
                 >
                   Qo'shish
                 </button>
@@ -250,17 +250,17 @@ export const AdminRecurring: FC = async () => {
             : null}
 
           {recurring.map((rec) => (
-            <Card class={`p-4 gsap-stagger ${rec.active ? "" : "opacity-75"}`}>
+            <Card class={`p-4 gsap-stagger glass-card rounded-r-md border border-crm-borderSoft/40 ${rec.active ? "" : "opacity-75"}`}>
               <div class="flex justify-between items-start gap-3 mb-3">
                 <div class="min-w-0">
-                  <h3 class="text-[16px] font-bold truncate">
+                  <h3 class="font-display text-[16px] font-extrabold truncate text-crm-textMain">
                     {rec.clientName}
                   </h3>
                   {rec.phone
                     ? (
                       <a
                         href={`tel:${rec.phone.replace(/\s+/g, "")}`}
-                        class="text-[13px] font-medium text-crm-textMuted mt-0.5 tabular-nums focus-ring rounded-md"
+                        class="text-[13px] font-semibold text-crm-textMuted mt-0.5 tabular-nums focus-ring rounded-r-xs block"
                       >
                         {rec.phone}
                       </a>
@@ -273,21 +273,21 @@ export const AdminRecurring: FC = async () => {
                 />
               </div>
 
-              <div class="flex items-center gap-3 bg-crm-surfaceSoft p-3 rounded-[16px]">
+              <div class="flex items-center gap-3 glass-surface p-3 rounded-r-sm border border-crm-borderSoft/30">
                 <div class="flex-1">
-                  <span class="block text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide mb-0.5">
+                  <span class="block text-[11px] font-bold text-crm-textMuted uppercase tracking-wider mb-0.5">
                     Kun
                   </span>
-                  <span class="block text-[14px] font-bold text-crm-textMain">
+                  <span class="font-display font-extrabold text-[14px] text-crm-textMain">
                     {dayNames[rec.dayOfWeek] ?? rec.dayOfWeek}
                   </span>
                 </div>
-                <div class="w-px h-8 bg-crm-borderSoft"></div>
+                <div class="w-px h-8 bg-crm-borderSoft/40"></div>
                 <div class="flex-1 pl-2">
-                  <span class="block text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide mb-0.5">
+                  <span class="block text-[11px] font-bold text-crm-textMuted uppercase tracking-wider mb-0.5">
                     Vaqt
                   </span>
-                  <span class="block text-[14px] font-bold text-crm-textMain tabular-nums">
+                  <span class="font-display font-extrabold text-[14px] text-crm-textMain tabular-nums">
                     {rec.startTime} - {rec.endTime}
                   </span>
                 </div>
@@ -301,16 +301,16 @@ export const AdminRecurring: FC = async () => {
                 )
                 : null}
 
-              <div class="flex gap-2 mt-3 pt-3 border-t border-crm-borderSoft">
+              <div class="flex gap-2 mt-3 pt-3 border-t border-crm-borderSoft/40">
                 <button
                   onclick={`setRecurringActive('${rec.id}', ${
                     rec.active ? "false" : "true"
                   }, this)`}
-                  class={`flex-1 min-h-[44px] text-[13px] font-bold ${
+                  class={`flex-1 min-h-[44px] text-[13px] font-display font-bold ${
                     rec.active
-                      ? "text-crm-warning bg-crm-warningSoft/60"
-                      : "text-crm-success bg-crm-successSoft/70"
-                  } rounded-[14px] tap-scale focus-ring disabled:opacity-50 flex items-center justify-center gap-1.5`}
+                      ? "text-crm-warning glass-surface border border-crm-warning/20"
+                      : "text-crm-success glass-surface border border-crm-success/20"
+                  } rounded-r-sm tap-scale focus-ring disabled:opacity-50 flex items-center justify-center gap-1.5`}
                 >
                   <Icon
                     name={rec.active ? "xCircle" : "check"}
@@ -320,7 +320,7 @@ export const AdminRecurring: FC = async () => {
                 </button>
                 <button
                   onclick={`deleteRecurring('${rec.id}', this)`}
-                  class="min-w-[44px] min-h-[44px] px-3 text-crm-danger bg-crm-dangerSoft/70 rounded-[14px] tap-scale focus-ring disabled:opacity-50 flex items-center justify-center"
+                  class="min-w-[44px] min-h-[44px] px-3 text-crm-danger glass-surface border border-crm-danger/20 rounded-r-sm tap-scale focus-ring disabled:opacity-50 flex items-center justify-center"
                   aria-label="O'chirish"
                 >
                   <Icon name="trash" class="w-4 h-4" />

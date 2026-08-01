@@ -78,13 +78,13 @@ export const AdminSettings: FC = async () => {
 
       <div class="px-5 space-y-5">
         <div class="gsap-stagger">
-          <h2 class="text-[15px] font-bold px-1 mb-2">Ish vaqti</h2>
-          <Card class="p-4">
+          <h2 class="font-display text-[15px] font-extrabold px-1 mb-2">Ish vaqti</h2>
+          <Card class="p-4 glass-card rounded-r-md border border-crm-borderSoft/40">
             <div class="grid grid-cols-[1fr_auto_1fr] items-end gap-3">
               <div>
                 <label
                   for="openTime"
-                  class="block text-[12px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                  class="block text-[11px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                 >
                   Ochilish
                 </label>
@@ -93,14 +93,14 @@ export const AdminSettings: FC = async () => {
                   type="time"
                   value={settings.openTime}
                   step={settings.snapMin * 60}
-                  class="w-full h-[46px] bg-crm-surfaceSoft rounded-[12px] px-3 text-[16px] font-bold tabular-nums border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                  class="w-full h-[46px] glass-surface rounded-r-xs px-3 text-[16px] font-bold tabular-nums border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
                 />
               </div>
               <div class="text-crm-textMuted pb-3 font-bold">-</div>
               <div>
                 <label
                   for="closeTime"
-                  class="block text-[12px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                  class="block text-[11px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                 >
                   Yopilish
                 </label>
@@ -109,16 +109,16 @@ export const AdminSettings: FC = async () => {
                   type="time"
                   value={settings.closeTime}
                   step={settings.snapMin * 60}
-                  class="w-full h-[46px] bg-crm-surfaceSoft rounded-[12px] px-3 text-[16px] font-bold tabular-nums border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                  class="w-full h-[46px] glass-surface rounded-r-xs px-3 text-[16px] font-bold tabular-nums border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
                 />
               </div>
             </div>
 
-            <div class="mt-4 pt-4 border-t border-crm-borderSoft grid grid-cols-3 gap-2">
+            <div class="mt-4 pt-4 border-t border-crm-borderSoft/40 grid grid-cols-3 gap-2">
               <div>
                 <label
                   for="horizonDays"
-                  class="block text-[11px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                  class="block text-[10px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                 >
                   Gorizont
                 </label>
@@ -128,13 +128,13 @@ export const AdminSettings: FC = async () => {
                   min="1"
                   max="30"
                   value={settings.horizonDays}
-                  class="w-full h-[46px] bg-crm-surfaceSoft rounded-[12px] px-3 text-[15px] font-bold tabular-nums border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                  class="w-full h-[46px] glass-surface rounded-r-xs px-3 text-[15px] font-bold tabular-nums border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
                 />
               </div>
               <div>
                 <label
                   for="minDurMin"
-                  class="block text-[11px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                  class="block text-[10px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                 >
                   Min
                 </label>
@@ -144,13 +144,13 @@ export const AdminSettings: FC = async () => {
                   min="30"
                   step="30"
                   value={settings.minDurMin}
-                  class="w-full h-[46px] bg-crm-surfaceSoft rounded-[12px] px-3 text-[15px] font-bold tabular-nums border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                  class="w-full h-[46px] glass-surface rounded-r-xs px-3 text-[15px] font-bold tabular-nums border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
                 />
               </div>
               <div>
                 <label
                   for="maxDurMin"
-                  class="block text-[11px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                  class="block text-[10px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                 >
                   Max
                 </label>
@@ -160,7 +160,7 @@ export const AdminSettings: FC = async () => {
                   min="30"
                   step="30"
                   value={settings.maxDurMin}
-                  class="w-full h-[46px] bg-crm-surfaceSoft rounded-[12px] px-3 text-[15px] font-bold tabular-nums border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                  class="w-full h-[46px] glass-surface rounded-r-xs px-3 text-[15px] font-bold tabular-nums border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
                 />
               </div>
             </div>
@@ -168,13 +168,13 @@ export const AdminSettings: FC = async () => {
             <div class="mt-3">
               <label
                 for="snapMin"
-                class="block text-[12px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                class="block text-[11px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
               >
                 Qadam
               </label>
               <select
                 id="snapMin"
-                class="w-full h-[46px] bg-crm-surfaceSoft rounded-[12px] px-3 text-[15px] font-bold border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                class="w-full h-[46px] glass-surface rounded-r-xs px-3 text-[15px] font-bold border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
               >
                 {[15, 30, 60].map((snap) => (
                   <option value={snap} selected={settings.snapMin === snap}>
@@ -186,7 +186,7 @@ export const AdminSettings: FC = async () => {
 
             <button
               onclick="saveSettings(this)"
-              class="w-full min-h-[48px] mt-4 rounded-[16px] bg-crm-primary text-white font-bold shadow-floating tap-scale focus-ring flex items-center justify-center gap-2"
+              class="w-full min-h-[48px] mt-4 rounded-r-sm bg-crm-primary text-white font-display font-bold shadow-floating tap-scale focus-ring flex items-center justify-center gap-2"
             >
               <Icon name="check" class="w-5 h-5" /> Saqlash
             </button>
@@ -194,17 +194,17 @@ export const AdminSettings: FC = async () => {
         </div>
 
         <div class="gsap-stagger">
-          <h2 class="text-[15px] font-bold px-1 mb-2">Timezone</h2>
-          <Card class="p-4">
+          <h2 class="font-display text-[15px] font-extrabold px-1 mb-2">Timezone</h2>
+          <Card class="p-4 glass-card rounded-r-md border border-crm-borderSoft/40">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center shrink-0">
+              <div class="w-10 h-10 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center shrink-0 shadow-soft">
                 <Icon name="clock" class="w-5 h-5" />
               </div>
               <div class="flex-1">
-                <p class="text-[14px] font-bold text-crm-textMain">
+                <p class="font-display text-[14px] font-extrabold text-crm-textMain">
                   Asia/Tashkent (UTC+5)
                 </p>
-                <p class="text-[12px] text-crm-textMuted mt-0.5 tabular-nums">
+                <p class="text-[12px] text-crm-textMuted mt-0.5 tabular-nums font-semibold">
                   Hozirgi vaqt: {currentLocalTime}
                 </p>
               </div>
@@ -213,26 +213,25 @@ export const AdminSettings: FC = async () => {
         </div>
 
         <div class="gsap-stagger">
-          <h2 class="text-[15px] font-bold px-1 mb-2">Adminlar</h2>
-          <Card class="p-4">
+          <h2 class="font-display text-[15px] font-extrabold px-1 mb-2">Adminlar</h2>
+          <Card class="p-4 glass-card rounded-r-md border border-crm-borderSoft/40">
             <div class="flex items-start gap-3">
-              <div class="w-10 h-10 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center shrink-0">
+              <div class="w-10 h-10 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center shrink-0 shadow-soft">
                 <Icon name="settings" class="w-5 h-5" />
               </div>
               <div class="flex-1">
-                <p class="text-[14px] font-bold text-crm-textMain">
+                <p class="font-display text-[14px] font-extrabold text-crm-textMain">
                   Admin qo'shish bot orqali ishlaydi
                 </p>
-                <p class="text-[12px] text-crm-textMuted mt-1 leading-relaxed">
+                <p class="text-[12px] text-crm-textMuted mt-1 leading-relaxed font-medium">
                   Owner admin Telegram botdagi admin buyruqlari orqali yordamchi
-                  adminlarga invite beradi. Bu Mini App ichida xavfsizlik uchun
-                  alohida rol boshqaruvi ochilmagan.
+                  adminlarga invite beradi.
                 </p>
               </div>
             </div>
             <button
               onclick="backToBot()"
-              class="w-full min-h-[46px] rounded-[14px] bg-crm-surfaceSoft text-crm-primary font-bold tap-scale focus-ring flex items-center justify-center gap-2"
+              class="w-full min-h-[46px] rounded-r-sm glass-surface text-crm-primary font-display font-bold tap-scale focus-ring flex items-center justify-center gap-2 border border-crm-primary/20"
             >
               <Icon name="message" class="w-5 h-5" /> Botga qaytish
             </button>
@@ -240,18 +239,17 @@ export const AdminSettings: FC = async () => {
         </div>
 
         <div class="gsap-stagger">
-          <Card class="p-4 bg-crm-dangerSoft/45">
+          <Card class="p-4 glass-surface rounded-r-md border border-crm-danger/20">
             <div class="flex items-start gap-3">
               <div class="w-10 h-10 rounded-full bg-crm-dangerSoft text-crm-danger flex items-center justify-center shrink-0">
                 <Icon name="xCircle" class="w-5 h-5" />
               </div>
               <div>
-                <p class="text-[14px] font-bold text-crm-textMain">
+                <p class="font-display text-[14px] font-extrabold text-crm-textMain">
                   Bloklash amallari botda
                 </p>
-                <p class="text-[12px] text-crm-textMuted mt-1 leading-relaxed">
-                  Foydalanuvchini bloklash ochiq ro'yxat emas, aniq Telegram ID
-                  bo'yicha admin API orqali bajariladi.
+                <p class="text-[12px] text-crm-textMuted mt-1 leading-relaxed font-medium">
+                  Foydalanuvchini bloklash Telegram ID bo'yicha admin API orqali bajariladi.
                 </p>
               </div>
             </div>

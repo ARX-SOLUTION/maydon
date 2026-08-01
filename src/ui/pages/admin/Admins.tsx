@@ -5,8 +5,6 @@ import { AppShell, PageHeader } from "../../components/UIComponents.tsx";
 import { RoleBottomNav } from "../../components/RoleBottomNav.tsx";
 import { Icon } from "../../components/LucideIcons.tsx";
 
-// The list is owner-gated + sensitive, so it remains client-fetched rather than
-// being server-rendered into the page HTML.
 const adminsScript = `
 var PROFILE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 var TRASH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
@@ -25,29 +23,29 @@ function roleChip(role) {
   var isOwner = role === "owner";
   var cls = isOwner ? "bg-crm-primarySoft text-crm-primary" : "bg-crm-borderSoft text-crm-textMuted";
   var label = isOwner ? "Asosiy" : "Yordamchi";
-  return '<span class="px-[10px] h-[26px] inline-flex items-center rounded-full text-[12px] font-semibold whitespace-nowrap ' + cls + '">' + label + '</span>';
+  return '<span class="px-[10px] h-[26px] inline-flex items-center rounded-r-xs text-[12px] font-bold whitespace-nowrap ' + cls + '">' + label + '</span>';
 }
 
 function adminRow(a, me) {
   var canDelete = a.role !== "owner" && a.telegramId !== me;
   var delBtn = canDelete
-    ? '<button onclick="removeAdmin(' + a.telegramId + ', this)" aria-label="O\\'chirish" class="min-w-[44px] min-h-[44px] rounded-[14px] bg-crm-dangerSoft text-crm-danger flex items-center justify-center gap-1.5 px-3 text-[13px] font-semibold tap-scale focus-ring shrink-0 disabled:opacity-50">' + TRASH_SVG + " O'chirish</button>"
+    ? '<button onclick="removeAdmin(' + a.telegramId + ', this)" aria-label="O\\'chirish" class="min-w-[44px] min-h-[44px] rounded-r-sm glass-surface text-crm-danger border border-crm-danger/20 flex items-center justify-center gap-1.5 px-3 text-[13px] font-bold tap-scale focus-ring shrink-0 disabled:opacity-50">' + TRASH_SVG + " O'chirish</button>"
     : "";
-  return '<div class="bg-crm-surface rounded-[24px] p-4 shadow-soft flex items-center justify-between gap-3">'
+  return '<div class="glass-card rounded-r-md p-4 shadow-soft border border-crm-borderSoft/40 flex items-center justify-between gap-3">'
     + '<div class="flex items-center gap-3 min-w-0">'
-    + '<div class="w-10 h-10 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center shrink-0">' + PROFILE_SVG + '</div>'
-    + '<div class="min-w-0"><div class="text-[15px] font-bold truncate">' + escHtml(a.name) + '</div><div class="mt-1">' + roleChip(a.role) + '</div></div>'
+    + '<div class="w-10 h-10 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center shrink-0 shadow-soft">' + PROFILE_SVG + '</div>'
+    + '<div class="min-w-0"><div class="font-display text-[15px] font-extrabold truncate text-crm-textMain">' + escHtml(a.name) + '</div><div class="mt-1">' + roleChip(a.role) + '</div></div>'
     + '</div>' + delBtn + '</div>';
 }
 
 async function loadAdmins() {
   var list = document.getElementById("adminsList");
   if (!list) return;
-  list.innerHTML = '<div class="text-center text-crm-textMuted text-sm font-medium py-8">Yuklanmoqda...</div>';
+  list.innerHTML = '<div class="text-center text-crm-textMuted text-sm font-bold font-display py-8">Yuklanmoqda...</div>';
   try {
     var res = await fetch("/api/admin/admins", { headers: adminsAuth() });
     if (res.status === 403) {
-      list.innerHTML = '<div class="bg-crm-surface rounded-[24px] p-8 shadow-soft text-center text-crm-textMuted text-sm font-medium">Bu bo\\'lim faqat asosiy admin (owner) uchun.</div>';
+      list.innerHTML = '<div class="glass-card rounded-r-md p-8 shadow-soft text-center text-crm-textMuted text-sm font-medium border border-crm-borderSoft/40">Bu bo\\'lim faqat asosiy admin (owner) uchun.</div>';
       var ib = document.getElementById("inviteBtn");
       if (ib) ib.classList.add("hidden");
       return;
@@ -61,7 +59,7 @@ async function loadAdmins() {
     var me = data.me;
     var admins = data.admins || [];
     if (!admins.length) {
-      list.innerHTML = '<div class="bg-crm-surface rounded-[24px] p-8 shadow-soft text-center text-crm-textMuted text-sm font-medium">Adminlar yo\\'q</div>';
+      list.innerHTML = '<div class="glass-card rounded-r-md p-8 shadow-soft text-center text-crm-textMuted text-sm font-medium border border-crm-borderSoft/40">Adminlar yo\\'q</div>';
       return;
     }
     list.innerHTML = admins.map(function (a) { return adminRow(a, me); }).join("");
@@ -100,9 +98,9 @@ async function generateInvite(btn) {
     if (res.ok && data.link) {
       window.__inviteLink = data.link;
       var box = document.getElementById("inviteResult");
-      box.innerHTML = '<div class="text-[13px] font-semibold text-crm-textMuted mb-2">Taklif havolasi (bir martalik):</div>'
-        + '<div class="bg-crm-surfaceSoft rounded-[12px] p-3 text-[12px] break-all mb-3">' + escHtml(data.link) + '</div>'
-        + '<button onclick="copyInvite()" class="w-full min-h-[44px] rounded-[14px] bg-crm-primarySoft text-crm-primary font-semibold text-[14px] tap-scale focus-ring flex items-center justify-center gap-1.5">Nusxa olish</button>';
+      box.innerHTML = '<div class="text-[13px] font-bold text-crm-textMuted mb-2">Taklif havolasi (bir martalik):</div>'
+        + '<div class="glass-surface rounded-r-xs p-3 text-[12px] break-all mb-3 font-mono border border-crm-borderSoft/30">' + escHtml(data.link) + '</div>'
+        + '<button onclick="copyInvite()" class="w-full min-h-[44px] rounded-r-sm glass-surface text-crm-primary font-display font-bold text-[14px] tap-scale focus-ring flex items-center justify-center gap-1.5 border border-crm-primary/20">Nusxa olish</button>';
       box.classList.remove("hidden");
     } else {
       window.toast(data.error || "Xatolik yuz berdi", "error");
@@ -137,14 +135,14 @@ export const AdminAdmins: FC = () => {
         <button
           id="inviteBtn"
           onclick="generateInvite(this)"
-          class="w-full min-h-[48px] rounded-[16px] bg-crm-primary text-white font-bold text-[15px] shadow-floating tap-scale focus-ring flex items-center justify-center gap-2 disabled:opacity-50"
+          class="w-full min-h-[48px] rounded-r-sm bg-crm-primary text-white font-display font-bold text-[15px] shadow-floating tap-scale focus-ring flex items-center justify-center gap-2 disabled:opacity-50"
         >
           <Icon name="plus" class="w-5 h-5" /> Taklif havolasi
         </button>
 
         <div
           id="inviteResult"
-          class="hidden bg-crm-surface rounded-[24px] p-4 shadow-soft"
+          class="hidden glass-card rounded-r-md p-4 shadow-soft border border-crm-borderSoft/40"
         >
         </div>
 

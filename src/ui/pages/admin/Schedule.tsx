@@ -107,8 +107,6 @@ async function handleCancel(id, btn, date) {
 }
 
 async function cancelAdminBooking(id, date) {
-  // NB: this script is a backtick template literal — an inner \' collapses to a bare '
-  // and breaks the whole script. Use \\' so the emitted JS keeps a real \' escape.
   var btn = document.querySelector('button[onclick*="cancelAdminBooking(\\'' + id + '\\'")') ||
             document.querySelector('button[onclick*="cancelAdminBooking(&#39;' + id + '&#39;")');
   await handleCancel(id, btn, date);
@@ -196,11 +194,11 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
 
       <div class="px-5 space-y-4">
         <div id="manualBookingPanel" class="hidden gsap-stagger">
-          <Card>
+          <Card class="glass-card rounded-r-md border border-crm-borderSoft/40">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <h2 class="text-[15px] font-bold">Qo'lda bron qo'shish</h2>
-                <p class="text-[12px] text-crm-textMuted mt-1">
+                <h2 class="font-display text-[15px] font-extrabold">Qo'lda bron qo'shish</h2>
+                <p class="text-[12px] text-crm-textMuted mt-0.5">
                   Admin bronlari darhol tasdiqlangan holatda saqlanadi.
                 </p>
               </div>
@@ -216,21 +214,21 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
               <div>
                 <label
                   for="manualClientName"
-                  class="block text-[12px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                  class="block text-[11px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                 >
                   Mijoz
                 </label>
                 <input
                   id="manualClientName"
                   autocomplete="name"
-                  class="w-full h-[48px] bg-crm-surfaceSoft rounded-[14px] px-4 text-[15px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                  class="w-full h-[48px] glass-surface rounded-r-xs px-4 text-[15px] font-medium border border-crm-borderSoft/40 placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
                   placeholder="Masalan: Ali jamoasi"
                 />
               </div>
               <div>
                 <label
                   for="manualPhone"
-                  class="block text-[12px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                  class="block text-[11px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                 >
                   Telefon
                 </label>
@@ -238,7 +236,7 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                   id="manualPhone"
                   type="tel"
                   autocomplete="tel"
-                  class="w-full h-[48px] bg-crm-surfaceSoft rounded-[14px] px-4 text-[15px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
+                  class="w-full h-[48px] glass-surface rounded-r-xs px-4 text-[15px] font-medium border border-crm-borderSoft/40 placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
                   placeholder="+998 90 123 45 67"
                 />
               </div>
@@ -246,7 +244,7 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                 <div>
                   <label
                     for="manualDate"
-                    class="block text-[11px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                    class="block text-[10px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                   >
                     Sana
                   </label>
@@ -254,13 +252,13 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                     id="manualDate"
                     type="date"
                     value={targetDate}
-                    class="w-full h-[46px] bg-crm-surfaceSoft rounded-[14px] px-3 text-[13px] font-bold border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+                    class="w-full h-[46px] glass-surface rounded-r-xs px-2.5 text-[13px] font-bold border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
                   />
                 </div>
                 <div>
                   <label
                     for="manualStart"
-                    class="block text-[11px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                    class="block text-[10px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                   >
                     Boshlanish
                   </label>
@@ -269,13 +267,13 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                     type="time"
                     value={dayData.openTime}
                     step={(settings?.snapMin ?? 30) * 60}
-                    class="w-full h-[46px] bg-crm-surfaceSoft rounded-[14px] px-3 text-[13px] font-bold border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
+                    class="w-full h-[46px] glass-surface rounded-r-xs px-2 text-[13px] font-bold border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
                   />
                 </div>
                 <div>
                   <label
                     for="manualEnd"
-                    class="block text-[11px] font-semibold text-crm-textMuted uppercase mb-1 px-1"
+                    class="block text-[10px] font-bold text-crm-textMuted uppercase mb-1 px-1 tracking-wider"
                   >
                     Tugash
                   </label>
@@ -284,14 +282,14 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                     type="time"
                     value={dayData.closeTime}
                     step={(settings?.snapMin ?? 30) * 60}
-                    class="w-full h-[46px] bg-crm-surfaceSoft rounded-[14px] px-3 text-[13px] font-bold border border-crm-borderSoft focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
+                    class="w-full h-[46px] glass-surface rounded-r-xs px-2 text-[13px] font-bold border border-crm-borderSoft/40 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 tabular-nums"
                   />
                 </div>
               </div>
             </div>
             <button
               onclick="submitManualBooking(this)"
-              class="w-full min-h-[48px] bg-crm-primary text-white rounded-[16px] font-bold tap-scale focus-ring shadow-floating flex items-center justify-center gap-2"
+              class="w-full min-h-[48px] bg-crm-primary text-white rounded-r-sm font-display font-bold tap-scale focus-ring shadow-floating flex items-center justify-center gap-2"
             >
               <Icon name="check" class="w-5 h-5" /> Saqlash
             </button>
@@ -299,35 +297,35 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
         </div>
 
         <div class="grid grid-cols-2 gap-3 gsap-stagger">
-          <div class="bg-crm-surface rounded-[18px] shadow-soft p-3">
-            <span class="text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide">
+          <div class="glass-card rounded-r-md shadow-soft p-3.5 border border-crm-borderSoft/40">
+            <span class="text-[11px] font-bold text-crm-textMuted uppercase tracking-wider">
               Bugungi bronlar
             </span>
-            <span class="block text-[24px] font-extrabold tabular-nums mt-0.5">
+            <span class="font-display text-[24px] font-extrabold tabular-nums mt-0.5 block text-crm-textMain">
               {confirmedCount}
             </span>
           </div>
-          <div class="bg-crm-surface rounded-[18px] shadow-soft p-3">
-            <span class="text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide">
+          <div class="glass-card rounded-r-md shadow-soft p-3.5 border border-crm-borderSoft/40">
+            <span class="text-[11px] font-bold text-crm-textMuted uppercase tracking-wider">
               Bandlik
             </span>
-            <span class="block text-[24px] font-extrabold tabular-nums mt-0.5">
+            <span class="font-display text-[24px] font-extrabold tabular-nums mt-0.5 block text-crm-textMain">
               {occupancyPct}%
             </span>
           </div>
-          <div class="bg-crm-surface rounded-[18px] shadow-soft p-3">
-            <span class="text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide">
+          <div class="glass-card rounded-r-md shadow-soft p-3.5 border border-crm-borderSoft/40">
+            <span class="text-[11px] font-bold text-crm-textMuted uppercase tracking-wider">
               Bo'sh vaqt
             </span>
-            <span class="block text-[24px] font-extrabold tabular-nums mt-0.5">
+            <span class="font-display text-[24px] font-extrabold tabular-nums mt-0.5 block text-crm-textMain">
               {freeLabel}
             </span>
           </div>
-          <div class="bg-crm-surface rounded-[18px] shadow-soft p-3">
-            <span class="text-[11px] font-semibold text-crm-textMuted uppercase tracking-wide">
+          <div class="glass-card rounded-r-md shadow-soft p-3.5 border border-crm-borderSoft/40">
+            <span class="text-[11px] font-bold text-crm-textMuted uppercase tracking-wider">
               Pending
             </span>
-            <span class={`block text-[24px] font-extrabold tabular-nums mt-0.5 ${pendingCount > 0 ? "text-crm-warning" : ""}`}>
+            <span class={`font-display text-[24px] font-extrabold tabular-nums mt-0.5 block ${pendingCount > 0 ? "text-crm-warning" : "text-crm-textMain"}`}>
               {pendingCount}
             </span>
           </div>
@@ -342,20 +340,20 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
               hx-push-url="true"
               aria-label={`${d.weekday}, ${d.day} jadvalini ko'rish`}
               aria-current={d.active ? "date" : undefined}
-              class={`flex flex-col items-center justify-center min-w-[68px] h-[76px] rounded-[20px] tap-scale focus-ring ${
+              class={`flex flex-col items-center justify-center min-w-[68px] h-[76px] rounded-r-md tap-scale focus-ring transition-all duration-200 ${
                 d.active
-                  ? "bg-crm-primary text-white shadow-floating"
-                  : "bg-crm-surface text-crm-textMain shadow-soft hover:shadow-softHover"
+                  ? "bg-crm-primary text-white shadow-floating scale-105"
+                  : "glass-card text-crm-textMain shadow-soft border border-crm-borderSoft/40 hover:bg-crm-surfaceSoft"
               }`}
             >
               <span
-                class={`text-[12px] font-semibold ${
+                class={`text-[12px] font-bold ${
                   d.active ? "text-white/80" : "text-crm-textMuted"
                 }`}
               >
                 {d.weekday}
               </span>
-              <span class="text-[20px] font-extrabold mt-0.5">{d.day}</span>
+              <span class="font-display text-[20px] font-extrabold mt-0.5">{d.day}</span>
               {d.isToday
                 ? (
                   <div
@@ -370,10 +368,10 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
           ))}
         </div>
 
-        <Card class="p-0 overflow-hidden gsap-stagger">
-          <div class="p-4 border-b border-crm-borderSoft bg-crm-surfaceSoft flex justify-between items-center gap-3">
-            <span class="font-bold text-[15px]">Kun jadvali</span>
-            <span class="text-[12px] font-medium text-crm-textMuted bg-crm-surface px-2 py-1 rounded-md shadow-sm">
+        <Card class="p-0 overflow-hidden gsap-stagger glass-card rounded-r-md border border-crm-borderSoft/40">
+          <div class="p-4 border-b border-crm-borderSoft/40 glass-panel flex justify-between items-center gap-3">
+            <span class="font-display font-extrabold text-[15px]">Kun jadvali</span>
+            <span class="text-[12px] font-bold text-crm-textMuted glass-surface px-2.5 py-1 rounded-r-xs border border-crm-borderSoft/30">
               {dayData.openTime} - {dayData.closeTime}
             </span>
           </div>
@@ -386,9 +384,9 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
               )
               : null}
             {groupedSlots.map((group) => (
-              <div class="flex border-b border-crm-borderSoft last:border-b-0 h-[80px]">
-                <div class="w-[60px] shrink-0 border-r border-crm-borderSoft flex flex-col justify-between py-1 items-center bg-crm-surfaceSoft/30">
-                  <span class="text-[12px] font-semibold text-crm-textMuted -mt-3 bg-crm-surface px-1">
+              <div class="flex border-b border-crm-borderSoft/40 last:border-b-0 h-[80px]">
+                <div class="w-[60px] shrink-0 border-r border-crm-borderSoft/40 flex flex-col justify-between py-1 items-center glass-surface">
+                  <span class="text-[12px] font-bold text-crm-textMuted -mt-3 glass-panel px-1.5 py-0.5 rounded-r-xs border border-crm-borderSoft/30">
                     {group.hour}
                   </span>
                 </div>
@@ -397,11 +395,6 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                     const booking = slot.bookingId
                       ? bookingsById.get(slot.bookingId)
                       : null;
-                    // Availability only marks CONFIRMED bookings busy — a pending
-                    // request for this same slot is otherwise invisible on the
-                    // grid, so an admin manually booking over it would silently
-                    // orphan that request. Surface it (informational only; the
-                    // slot stays clickable, per "domain owns conflict handling").
                     const pendingMatch = !slot.isBusy
                       ? pendingBookings.find((b) => overlaps(slot.start, slot.end, b.start, b.end))
                       : null;
@@ -409,7 +402,7 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                       return (
                         <button
                           onclick={`openManualBooking('${targetDate}', '${slot.start}', '${slot.end}')`}
-                          class="flex-1 min-h-[40px] border-b border-crm-borderSoft border-dashed last:border-b-0 bg-crm-warningSoft/60 hover:bg-crm-warningSoft flex items-center justify-between px-3 focus-ring transition-colors"
+                          class="flex-1 min-h-[40px] border-b border-crm-borderSoft/40 border-dashed last:border-b-0 bg-crm-warningSoft/60 hover:bg-crm-warningSoft flex items-center justify-between px-3 focus-ring transition-colors"
                           aria-label={`${slot.start} — ${pendingMatch.clientName ?? "kutilayotgan so'rov"}, qo'lda bron qo'shish`}
                         >
                           <span class="text-[12px] font-bold text-crm-warning flex items-center gap-1.5 min-w-0">
@@ -423,13 +416,13 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                     }
                     return slot.isBusy
                       ? (
-                        <div class="flex-1 border-b border-crm-borderSoft border-dashed last:border-b-0 bg-crm-primarySoft/55 flex items-center justify-between gap-3 px-3">
+                        <div class="flex-1 border-b border-crm-borderSoft/40 border-dashed last:border-b-0 bg-crm-primarySoft/55 flex items-center justify-between gap-3 px-3">
                           <span class="text-[13px] font-bold text-crm-primary flex items-center min-w-0">
                             <Icon
                               name="checkCircle"
                               class="w-3.5 h-3.5 mr-1.5 shrink-0"
                             />
-                            <span class="truncate">
+                            <span class="truncate font-display">
                               {booking?.clientName || "Band"}
                             </span>
                           </span>
@@ -440,7 +433,7 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                                   href={`tel:${
                                     booking.clientPhone.replace(/\s+/g, "")
                                   }`}
-                                  class="text-[12px] font-bold text-crm-primary tabular-nums focus-ring rounded-md"
+                                  class="text-[12px] font-bold text-crm-primary tabular-nums focus-ring rounded-r-xs"
                                 >
                                   {booking.clientPhone}
                                 </a>
@@ -449,7 +442,7 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                             {booking?.id && booking.status === "confirmed" ? (
                               <button
                                 onclick={`cancelAdminBooking('${booking.id}', '${targetDate}')`}
-                                class="h-8 px-2.5 rounded-[10px] bg-crm-dangerSoft text-crm-danger font-bold text-[12px] tap-scale focus-ring flex items-center justify-center transition-colors hover:bg-crm-danger hover:text-white"
+                                class="h-8 px-2.5 rounded-r-xs bg-crm-dangerSoft text-crm-danger font-bold text-[12px] tap-scale focus-ring flex items-center justify-center transition-colors hover:bg-crm-danger hover:text-white"
                               >
                                 Bekor qilish
                               </button>
@@ -460,10 +453,10 @@ export const AdminSchedule: FC<{ selectedDate?: string }> = async (
                       : (
                         <button
                           onclick={`openManualBooking('${targetDate}', '${slot.start}', '${slot.end}')`}
-                          class="flex-1 min-h-[40px] border-b border-crm-borderSoft border-dashed last:border-b-0 transition-[background-color] duration-150 ease-out active:bg-crm-primarySoft/50 hover:bg-crm-primarySoft/35 flex items-center px-3 focus-ring"
+                          class="flex-1 min-h-[40px] border-b border-crm-borderSoft/40 border-dashed last:border-b-0 transition-[background-color] duration-150 ease-out active:bg-crm-primarySoft/50 hover:bg-crm-primarySoft/35 flex items-center px-3 focus-ring"
                           aria-label={`${slot.start} uchun qo'lda bron qo'shish`}
                         >
-                          <span class="text-[12px] font-semibold text-crm-textMuted">
+                          <span class="text-[12px] font-bold text-crm-textMuted">
                             + {slot.start} Bron qo'shish
                           </span>
                         </button>

@@ -30,8 +30,6 @@ async function handleAction(id, action, btn, reason) {
       window.toast("So'rov " + (labels[action] || 'yangilandi') + "!", 'success');
       htmx.ajax('GET', '/app/admin/requests', '#app-content');
     } else if (data.error === 'Slot conflict detected') {
-      // Same string services/booking.ts already returns on a losing race —
-      // give the admin the specific reason instead of a generic failure.
       window.toast("Vaqt konflikti: bu oraliq boshqa bron bilan to'qnashdi.", 'error');
       htmx.ajax('GET', '/app/admin/requests', '#app-content');
     } else {
@@ -54,7 +52,7 @@ function openRejectSheet(id) {
   rejectSheetReason = '';
   var sheet = document.getElementById('rejectSheet');
   var chips = document.querySelectorAll('.reject-reason-chip');
-  chips.forEach(function(c) { c.setAttribute('aria-pressed', 'false'); c.className = c.className.replace('bg-crm-primary text-white', 'bg-crm-surfaceSoft text-crm-textMain'); });
+  chips.forEach(function(c) { c.setAttribute('aria-pressed', 'false'); c.className = c.className.replace('bg-crm-primary text-white', 'glass-surface text-crm-textMain'); });
   var custom = document.getElementById('rejectCustomNote');
   if (custom) { custom.value = ''; custom.classList.add('hidden'); }
   if (sheet) sheet.classList.remove('hidden');
@@ -73,8 +71,8 @@ function pickRejectReason(reason, chip) {
     var isActive = c === chip;
     c.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     c.className = c.className.replace(
-      isActive ? 'bg-crm-surfaceSoft text-crm-textMain' : 'bg-crm-primary text-white',
-      isActive ? 'bg-crm-primary text-white' : 'bg-crm-surfaceSoft text-crm-textMain'
+      isActive ? 'glass-surface text-crm-textMain' : 'bg-crm-primary text-white',
+      isActive ? 'bg-crm-primary text-white' : 'glass-surface text-crm-textMain'
     );
   });
   var custom = document.getElementById('rejectCustomNote');
@@ -142,7 +140,7 @@ export const AdminRequests: FC = async () => {
             hx-push-url="true"
             aria-label="Foydalanuvchi rejimi"
             onclick="localStorage.setItem('maydon_role_override', 'user')"
-            class="min-w-[44px] min-h-[44px] rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center tap-scale focus-ring"
+            class="min-w-[44px] min-h-[44px] rounded-full glass-surface text-crm-primary flex items-center justify-center tap-scale focus-ring border border-crm-borderSoft/40"
           >
             <Icon name="profile" class="w-5 h-5" />
           </button>
@@ -153,10 +151,10 @@ export const AdminRequests: FC = async () => {
         {pendingRequests.length > 0
           ? (
             <div class="flex items-center gap-2 gsap-stagger">
-              <span class="inline-flex items-center justify-center min-w-[26px] h-[26px] px-2 rounded-full bg-crm-warningSoft text-crm-warning text-[13px] font-extrabold tabular-nums">
+              <span class="inline-flex items-center justify-center min-w-[26px] h-[26px] px-2 rounded-r-xs bg-crm-warningSoft text-crm-warning text-[13px] font-extrabold tabular-nums">
                 {pendingRequests.length}
               </span>
-              <span class="text-[13px] font-semibold text-crm-textMuted">
+              <span class="text-[13px] font-bold text-crm-textMuted">
                 {pendingRequests.length === 1 ? "kutilayotgan so'rov" : "ta kutilayotgan so'rov"}
               </span>
             </div>
@@ -165,33 +163,33 @@ export const AdminRequests: FC = async () => {
         <div class="space-y-4">
           {pendingRequests.length === 0
             ? (
-              <Card class="p-8 text-center items-center text-crm-textMuted text-sm font-medium gsap-stagger">
-                <div class="w-12 h-12 rounded-full bg-crm-successSoft text-crm-success flex items-center justify-center mb-1">
+              <Card class="p-8 text-center items-center text-crm-textMuted text-sm font-medium gsap-stagger glass-card rounded-r-md border border-crm-borderSoft/40">
+                <div class="w-12 h-12 rounded-full bg-crm-successSoft text-crm-success flex items-center justify-center mb-1 shadow-soft">
                   <Icon name="checkCircle" class="w-6 h-6" />
                 </div>
-                <p>Hozircha yangi so'rov yo'q</p>
+                <p class="font-display font-bold text-crm-textMain text-[16px]">Hozircha yangi so'rov yo'q</p>
               </Card>
             )
             : null}
           {pendingRequests.map((req) => (
             <Card
-              class={`p-4 gsap-stagger ${
-                req.queue === 1 ? "shadow-softHover" : "opacity-85"
+              class={`p-4 gsap-stagger glass-card rounded-r-md border border-crm-borderSoft/40 ${
+                req.queue === 1 ? "shadow-floating border-crm-primary/30" : "opacity-90"
               }`}
               id={`req-${req.id}`}
             >
               <div class="flex justify-between items-start mb-3">
                 <div>
-                  <h3 class="text-[16px] font-bold">{req.user}</h3>
+                  <h3 class="font-display text-[16px] font-extrabold text-crm-textMain">{req.user}</h3>
                   <a
                     href={`tel:${req.phone.replace(/\s+/g, "")}`}
-                    class="text-[13px] font-medium text-crm-textMuted mt-0.5 flex items-center hover:text-crm-primary focus-ring rounded-md"
+                    class="text-[13px] font-semibold text-crm-textMuted mt-0.5 flex items-center hover:text-crm-primary focus-ring rounded-r-xs"
                   >
                     <Icon name="profile" class="w-3.5 h-3.5 mr-1" /> {req.phone}
                   </a>
                 </div>
                 <div class="flex flex-col items-end">
-                  <span class="text-[12px] font-bold px-2 py-1 bg-crm-surfaceSoft rounded-md text-crm-textMuted mb-1">
+                  <span class="text-[12px] font-bold px-2 py-0.5 glass-surface rounded-r-xs text-crm-textMuted mb-1 border border-crm-borderSoft/30">
                     Navbat: #{req.queue}
                   </span>
                   <span class="text-[11px] font-medium text-crm-textMuted/70">
@@ -203,7 +201,7 @@ export const AdminRequests: FC = async () => {
                         <a
                           href={`tg://user?id=${req.userId}`}
                           aria-label="Telegram orqali yozish"
-                          class="min-w-[44px] min-h-[44px] rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center tap-scale focus-ring"
+                          class="min-w-[38px] min-h-[38px] rounded-full glass-surface text-crm-primary flex items-center justify-center tap-scale focus-ring border border-crm-borderSoft/30"
                         >
                           <Icon name="message" class="w-4 h-4" />
                         </a>
@@ -213,11 +211,11 @@ export const AdminRequests: FC = async () => {
                 </div>
               </div>
 
-              <div class="bg-crm-surfaceSoft rounded-[12px] p-3 flex items-center justify-between mb-4">
+              <div class="glass-surface rounded-r-sm p-3 flex items-center justify-between mb-4 border border-crm-borderSoft/30">
                 <span class="text-[13px] font-bold text-crm-textMain">
                   {req.date}
                 </span>
-                <span class="text-[15px] font-bold tabular-nums">
+                <span class="font-display text-[15px] font-extrabold tabular-nums text-crm-primary">
                   {req.time}
                 </span>
               </div>
@@ -227,22 +225,22 @@ export const AdminRequests: FC = async () => {
                   data-reject-btn
                   onclick={`openRejectSheet('${req.id}')`}
                   aria-label={`${req.user} so'rovini rad etish`}
-                  class="flex-1 min-h-[44px] rounded-[14px] bg-crm-dangerSoft text-crm-danger font-semibold text-[14px] tap-scale focus-ring flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  class="flex-1 min-h-[44px] rounded-r-sm glass-surface text-crm-danger font-display font-bold text-[14px] tap-scale focus-ring flex items-center justify-center gap-1.5 disabled:opacity-50 border border-crm-danger/20"
                 >
-                  <Icon name="xCircle" class="w-4 h-4 mr-1.5" /> Rad etish
+                  <Icon name="xCircle" class="w-4 h-4 mr-1" /> Rad etish
                 </button>
                 <button
                   onclick={`handleAction('${req.id}', 'confirm', this)`}
                   aria-label={`${req.user} so'rovini tasdiqlash`}
-                  class="flex-1 min-h-[44px] rounded-[14px] bg-crm-primary text-white font-semibold text-[14px] tap-scale focus-ring shadow-floating flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  class="flex-1 min-h-[44px] rounded-r-sm bg-crm-primary text-white font-display font-bold text-[14px] tap-scale focus-ring shadow-floating flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  <Icon name="check" class="w-4 h-4 mr-1.5" /> Tasdiqlash
+                  <Icon name="check" class="w-4 h-4 mr-1" /> Tasdiqlash
                 </button>
               </div>
               <button
                 onclick={`handleAction('${req.id}', 'cancel', this)`}
                 aria-label={`${req.user} so'rovini butunlay bekor qilish`}
-                class="mt-3 w-full min-h-[44px] rounded-[14px] bg-crm-dangerSoft text-crm-danger font-semibold text-[14px] tap-scale focus-ring flex items-center justify-center gap-1.5 disabled:opacity-50"
+                class="mt-2.5 w-full min-h-[44px] rounded-r-sm glass-surface text-crm-danger font-display font-bold text-[14px] tap-scale focus-ring flex items-center justify-center gap-1.5 disabled:opacity-50 border border-crm-danger/20"
               >
                 <Icon name="xCircle" class="w-4 h-4" /> Bekor qilish
               </button>
@@ -251,10 +249,7 @@ export const AdminRequests: FC = async () => {
         </div>
       </div>
 
-      {/* Reject reason sheet — one instance, opened per-card via openRejectSheet(id).
-          Lightweight confirmation per ADMIN_DESIGN.md 17.2 (reject is not a strong
-          confirmation), but still asks *why* since a reason changes what the user
-          sees in their rejection notification. */}
+      {/* Reject reason sheet */}
       <div
         id="rejectSheet"
         class="hidden fixed inset-0 z-[70]"
@@ -263,23 +258,23 @@ export const AdminRequests: FC = async () => {
         aria-labelledby="rejectSheetTitle"
       >
         <div
-          class="absolute inset-0 bg-crm-textMain/40"
+          class="absolute inset-0 bg-crm-textMain/40 backdrop-blur-sm"
           onclick="closeRejectSheet()"
           aria-hidden="true"
         >
         </div>
-        <div class="absolute inset-x-0 bottom-0 bg-crm-surface rounded-t-[28px] p-5 pb-safe shadow-floating">
+        <div class="absolute inset-x-0 bottom-0 glass-panel rounded-t-r-xl p-5 pb-safe shadow-floating max-w-[480px] mx-auto border-t border-crm-borderSoft/30">
           <div class="w-12 h-1.5 bg-crm-borderSoft/80 rounded-full mx-auto mb-4"></div>
-          <h2 id="rejectSheetTitle" class="text-[17px] font-bold text-crm-textMain">
+          <h2 id="rejectSheetTitle" class="font-display text-[18px] font-extrabold text-crm-textMain">
             So'rovni rad etish
           </h2>
-          <p class="text-[13px] text-crm-textMuted mt-1 mb-4">
+          <p class="text-[13px] text-crm-textMuted mt-0.5 mb-4">
             Foydalanuvchiga sabab ko'rsatiladimi?
           </p>
           <div class="flex flex-wrap gap-2 mb-3">
             <button
               type="button"
-              class="reject-reason-chip min-h-[42px] px-4 rounded-full bg-crm-surfaceSoft text-crm-textMain text-[13px] font-semibold tap-scale focus-ring"
+              class="reject-reason-chip min-h-[42px] px-4 rounded-r-sm glass-surface text-crm-textMain text-[13px] font-bold tap-scale focus-ring"
               aria-pressed="false"
               onclick="pickRejectReason('Vaqt mavjud emas', this)"
             >
@@ -287,7 +282,7 @@ export const AdminRequests: FC = async () => {
             </button>
             <button
               type="button"
-              class="reject-reason-chip min-h-[42px] px-4 rounded-full bg-crm-surfaceSoft text-crm-textMain text-[13px] font-semibold tap-scale focus-ring"
+              class="reject-reason-chip min-h-[42px] px-4 rounded-r-sm glass-surface text-crm-textMain text-[13px] font-bold tap-scale focus-ring"
               aria-pressed="false"
               onclick="pickRejectReason(&quot;Jadval o'zgardi&quot;, this)"
             >
@@ -295,7 +290,7 @@ export const AdminRequests: FC = async () => {
             </button>
             <button
               type="button"
-              class="reject-reason-chip min-h-[42px] px-4 rounded-full bg-crm-surfaceSoft text-crm-textMain text-[13px] font-semibold tap-scale focus-ring"
+              class="reject-reason-chip min-h-[42px] px-4 rounded-r-sm glass-surface text-crm-textMain text-[13px] font-bold tap-scale focus-ring"
               aria-pressed="false"
               onclick="pickRejectReason(&quot;Noto'g'ri ma'lumot&quot;, this)"
             >
@@ -303,7 +298,7 @@ export const AdminRequests: FC = async () => {
             </button>
             <button
               type="button"
-              class="reject-reason-chip min-h-[42px] px-4 rounded-full bg-crm-surfaceSoft text-crm-textMain text-[13px] font-semibold tap-scale focus-ring"
+              class="reject-reason-chip min-h-[42px] px-4 rounded-r-sm glass-surface text-crm-textMain text-[13px] font-bold tap-scale focus-ring"
               aria-pressed="false"
               onclick="pickRejectReason('other', this)"
             >
@@ -315,21 +310,21 @@ export const AdminRequests: FC = async () => {
             rows={2}
             placeholder="Sababni yozing..."
             aria-label="Rad etish sababi"
-            class="hidden w-full bg-crm-surfaceSoft rounded-[14px] px-4 py-3 text-[14px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 mb-3 resize-none"
+            class="hidden w-full glass-surface rounded-r-xs px-4 py-3 text-[14px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/50 focus:outline-none focus:ring-2 focus:ring-crm-primary/40 mb-3 resize-none"
           >
           </textarea>
-          <div class="flex gap-3 mt-2">
+          <div class="flex gap-3 mt-3">
             <button
               type="button"
               onclick="closeRejectSheet()"
-              class="flex-1 min-h-[48px] rounded-[16px] bg-crm-surfaceSoft text-crm-textMain font-bold tap-scale focus-ring"
+              class="flex-1 min-h-[48px] rounded-r-sm glass-surface text-crm-textMain font-display font-bold tap-scale focus-ring"
             >
               Bekor qilish
             </button>
             <button
               type="button"
               onclick="confirmReject(this)"
-              class="flex-1 min-h-[48px] rounded-[16px] bg-crm-danger text-white font-bold tap-scale focus-ring shadow-floating"
+              class="flex-1 min-h-[48px] rounded-r-sm bg-crm-danger text-white font-display font-bold tap-scale focus-ring shadow-floating"
             >
               Rad etishni tasdiqlash
             </button>

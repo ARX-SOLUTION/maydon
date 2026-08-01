@@ -12,10 +12,12 @@ import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import type { Booking } from "./models.ts";
 
 const { kv, keys, addAdmin, getBooking, getBookingsByDay, upsertUser, initDefaultSettings } = await import("./kv.ts");
-const { cancelBooking, createBooking, confirmBooking } = await import("./services/booking.ts");
+const { cancelBooking, createBooking, confirmBooking, tashkentDate } = await import("./services/booking.ts");
 const { getDayAvailability } = await import("./services/availability.ts");
 const { notifyUserCancelled } = await import("./services/notify.ts");
 const { default: app } = await import("./main.ts");
+
+const TEST_DATE = tashkentDate();
 
 async function clearKv() {
   const entries = kv.list({ prefix: [] });
@@ -68,7 +70,7 @@ Deno.test("Tier 1.1: cancelBooking successfully transitions a 'confirmed' bookin
     99999,
     "Client",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "12:00",
     "13:00",
     "admin"
@@ -91,7 +93,7 @@ Deno.test("Tier 1.2: cancelBooking updates the decidedAt timestamp of the bookin
     99999,
     "Client",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "12:00",
     "13:00",
     "admin"
@@ -113,7 +115,7 @@ Deno.test("Tier 1.3: cancelBooking releases the busy slot, making it available a
     99999,
     "Client",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "12:00",
     "13:00",
     "admin"
@@ -121,7 +123,7 @@ Deno.test("Tier 1.3: cancelBooking releases the busy slot, making it available a
   assertExists(createResult.booking);
 
   // Verify slot is busy
-  let avail = await getDayAvailability("2026-07-15");
+  let avail = await getDayAvailability(TEST_DATE);
   const busySlot = avail.slots.find(s => s.start === "12:00");
   assertExists(busySlot);
   assertEquals(busySlot.isBusy, true);
@@ -130,7 +132,7 @@ Deno.test("Tier 1.3: cancelBooking releases the busy slot, making it available a
   await cancelBooking(createResult.booking.id);
 
   // Verify slot is free again
-  avail = await getDayAvailability("2026-07-15");
+  avail = await getDayAvailability(TEST_DATE);
   const freeSlot = avail.slots.find(s => s.start === "12:00");
   assertExists(freeSlot);
   assertEquals(freeSlot.isBusy, false);
@@ -150,7 +152,7 @@ Deno.test("Tier 1.4: POST /api/admin/bookings/:id/cancel API returns success: tr
     99999,
     "Client",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "12:00",
     "13:00",
     "admin"
@@ -195,7 +197,7 @@ Deno.test("Tier 1.5: Admin can cancel a pending request and the acting admin is 
     userId,
     "Client",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "12:00",
     "13:00",
     "user",
@@ -230,7 +232,7 @@ Deno.test("Tier 1.6: Bot notification function notifyUserCancelled correctly cal
     id: "TEST_ID",
     userId: 99999,
     clientName: "Test User",
-    date: "2026-07-15",
+    date: TEST_DATE,
     start: "12:00",
     end: "13:00",
     status: "cancelled",
@@ -243,7 +245,7 @@ Deno.test("Tier 1.6: Bot notification function notifyUserCancelled correctly cal
   assertEquals(sentMsgs.length, 1);
   assertEquals(sentMsgs[0].chatId, 99999);
   assertStringIncludes(sentMsgs[0].text, "bekor qilindi");
-  assertStringIncludes(sentMsgs[0].text, "2026-07-15");
+  assertStringIncludes(sentMsgs[0].text, TEST_DATE);
   assertStringIncludes(sentMsgs[0].text, "12:00");
   assertStringIncludes(sentMsgs[0].text, "13:00");
   assertEquals(sentMsgs[0].options?.parse_mode, "Markdown");
@@ -266,7 +268,7 @@ Deno.test("Tier 2.2: cancelBooking on an already 'cancelled' booking returns suc
     99999,
     "Client",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "12:00",
     "13:00",
     "admin"
@@ -289,7 +291,7 @@ Deno.test("Tier 2.3: cancelBooking on a 'completed' booking returns success: fal
     99999,
     "Client",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "12:00",
     "13:00",
     "admin"
@@ -347,7 +349,7 @@ Deno.test("Tier 3.1: Complete booking cycle: User creates (pending) -> Admin con
     userId,
     "Test User",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "12:00",
     "13:00",
     "user"
@@ -356,7 +358,7 @@ Deno.test("Tier 3.1: Complete booking cycle: User creates (pending) -> Admin con
   assertEquals(createResult.booking.status, "pending");
 
   // Verify slot is NOT busy yet (only confirmed bookings block slots)
-  let avail = await getDayAvailability("2026-07-15");
+  let avail = await getDayAvailability(TEST_DATE);
   let slot = avail.slots.find(s => s.start === "12:00");
   assertExists(slot);
   assertEquals(slot.isBusy, false);
@@ -366,7 +368,7 @@ Deno.test("Tier 3.1: Complete booking cycle: User creates (pending) -> Admin con
   assertEquals(confirmResult.success, true);
 
   // Verify slot is busy
-  avail = await getDayAvailability("2026-07-15");
+  avail = await getDayAvailability(TEST_DATE);
   slot = avail.slots.find(s => s.start === "12:00");
   assertExists(slot);
   assertEquals(slot.isBusy, true);
@@ -376,7 +378,7 @@ Deno.test("Tier 3.1: Complete booking cycle: User creates (pending) -> Admin con
   assertEquals(cancelResult.success, true);
 
   // Verify slot is free again
-  avail = await getDayAvailability("2026-07-15");
+  avail = await getDayAvailability(TEST_DATE);
   slot = avail.slots.find(s => s.start === "12:00");
   assertExists(slot);
   assertEquals(slot.isBusy, false);
@@ -388,7 +390,7 @@ Deno.test("Tier 3.2: Race condition safety: Attempting to cancel a booking that 
     99999,
     "Client",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "12:00",
     "13:00",
     "admin"
@@ -448,7 +450,7 @@ Deno.test("Tier 4.1: Interactive admin UI scenario: schedule page includes cance
     99999,
     "Client A",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "12:00",
     "13:00",
     "admin"
@@ -458,12 +460,12 @@ Deno.test("Tier 4.1: Interactive admin UI scenario: schedule page includes cance
   const authHeader = await getAuthHeader(adminId, "Admin User");
 
   // 1. GET Schedule Page: should contain the cancel button referencing our booking id
-  const resGet1 = await app.request("/app/admin/schedule?date=2026-07-15", {
+  const resGet1 = await app.request(`/app/admin/schedule?date=${TEST_DATE}`, {
     headers: { "Authorization": authHeader },
   });
   assertEquals(resGet1.status, 200);
   const html1 = await resGet1.text();
-  assertStringIncludes(html1, `cancelAdminBooking(&#39;${bookingId}&#39;, &#39;2026-07-15&#39;)`);
+  assertStringIncludes(html1, `cancelAdminBooking(&#39;${bookingId}&#39;, &#39;${TEST_DATE}&#39;)`);
 
   // 2. Call Cancellation API route (mocking AJAX post)
   const resCancel = await app.request(`/api/admin/bookings/${bookingId}/cancel`, {
@@ -475,12 +477,12 @@ Deno.test("Tier 4.1: Interactive admin UI scenario: schedule page includes cance
   assertEquals(resCancel.status, 200);
 
   // 3. GET Schedule Page again: should NOT contain the cancel button referencing our booking id
-  const resGet2 = await app.request("/app/admin/schedule?date=2026-07-15", {
+  const resGet2 = await app.request(`/app/admin/schedule?date=${TEST_DATE}`, {
     headers: { "Authorization": authHeader },
   });
   assertEquals(resGet2.status, 200);
   const html2 = await resGet2.text();
-  assertEquals(html2.includes(`cancelAdminBooking(&#39;${bookingId}&#39;, &#39;2026-07-15&#39;)`), false);
+  assertEquals(html2.includes(`cancelAdminBooking(&#39;${bookingId}&#39;, &#39;${TEST_DATE}&#39;)`), false);
 });
 
 Deno.test("Tier 4.2: KV Index Leak prevention: confirm, reject, and expirePending clean up pending_by_created index", async () => {
@@ -498,7 +500,7 @@ Deno.test("Tier 4.2: KV Index Leak prevention: confirm, reject, and expirePendin
     userId,
     "Client",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "12:00",
     "13:00",
     "user"
@@ -524,7 +526,7 @@ Deno.test("Tier 4.2: KV Index Leak prevention: confirm, reject, and expirePendin
     99999,
     "Client 2",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "14:00",
     "15:00",
     "user"
@@ -549,7 +551,7 @@ Deno.test("Tier 4.2: KV Index Leak prevention: confirm, reject, and expirePendin
     99999,
     "Client 3",
     "+998901234567",
-    "2026-07-15",
+    TEST_DATE,
     "15:00",
     "16:00",
     "user"
