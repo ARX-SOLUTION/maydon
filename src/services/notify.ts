@@ -3,6 +3,7 @@
  */
 
 import type { Booking, User } from "../models.ts";
+import { miniAppKeyboard } from "../bot/onboarding.ts";
 
 // Escape user-controlled text so a name/phone containing Markdown metacharacters
 // can't break parse_mode:"Markdown" (which would 400 and silently drop the message).
@@ -27,7 +28,7 @@ export async function notifyNewRequest(
   queuePosition: number,
 ): Promise<void> {
   const text =
-    `🆕 **Yangi so'rov**\n\n` +
+    `🆕 *Yangi so'rov*\n\n` +
     `👤 ${escapeMd(user.name)}\n` +
     `📞 ${escapeMd(user.phone ?? "N/A")}\n` +
     `📅 ${booking.date}\n` +
@@ -53,8 +54,8 @@ export async function notifyNewUserApproval(
 ): Promise<void> {
   const text =
     `👤 Yangi foydalanuvchi ro'yxatdan o'tdi\n\n` +
-    `Ism: ${user.name || "Noma'lum"}\n` +
-    `Telefon: ${user.phone || "Noma'lum"}\n\n` +
+    `Ism: ${escapeMd(user.name || "Noma'lum")}\n` +
+    `Telefon: ${escapeMd(user.phone || "Noma'lum")}\n\n` +
     "Iltimos, foydalanuvchini tasdiqlang yoki rad eting.";
   await bot.sendMessage(adminChatId, text, {
     reply_markup: {
@@ -73,9 +74,12 @@ export async function notifyUserApprovalDecision(
   if (!user.approvalStatus || !user.approvalDecidedByName) return;
   const approved = user.approvalStatus === "approved";
   const text = approved
-    ? `✅ Ro'yxatdan o'tishingiz tasdiqlandi.\n\nAdmin: ${user.approvalDecidedByName}\nEndi maydonni band qilishingiz mumkin.`
-    : `❌ Ro'yxatdan o'tishingiz rad etildi.\n\nAdmin: ${user.approvalDecidedByName}\nQo'shimcha ma'lumot uchun administrator bilan bog'laning.`;
-  await bot.sendMessage(user.telegramId, text);
+    ? `✅ *Ro'yxatdan o'tishingiz tasdiqlandi.*\n\nAdmin: ${escapeMd(user.approvalDecidedByName)}\nEndi maydonni band qilishingiz mumkin.`
+    : `❌ *Ro'yxatdan o'tishingiz rad etildi.*\n\nAdmin: ${escapeMd(user.approvalDecidedByName)}\nQo'shimcha ma'lumot uchun administrator bilan bog'laning.`;
+  await bot.sendMessage(user.telegramId, text, {
+    parse_mode: "Markdown",
+    reply_markup: approved ? miniAppKeyboard(false) : undefined,
+  });
 }
 
 export async function notifyUserQueued(
@@ -100,12 +104,15 @@ export async function notifyUserConfirmed(
   booking: Booking,
 ): Promise<void> {
   const text =
-    `✅ **Tasdiqlandi!**\n\n` +
+    `✅ *Tasdiqlandi!*\n\n` +
     `📅 ${booking.date}\n` +
     `⏰ ${booking.start} - ${booking.end}\n\n` +
     `Kelishingizni kutamiz!`;
 
-  await bot.sendMessage(userId, text, { parse_mode: "Markdown" });
+  await bot.sendMessage(userId, text, {
+    parse_mode: "Markdown",
+    reply_markup: miniAppKeyboard(false),
+  });
 }
 
 export async function notifyUserRejected(
@@ -116,22 +123,25 @@ export async function notifyUserRejected(
   alternativeSlots?: Array<{ start: string; end: string }>,
 ): Promise<void> {
   let text =
-    `❌ **Rad etildi**\n\n` +
+    `❌ *Rad etildi*\n\n` +
     `📅 ${booking.date}\n` +
     `⏰ ${booking.start} - ${booking.end}\n\n` +
-    `Sabab: ${reason}`;
+    `Sabab: ${escapeMd(reason)}`;
 
   if (alternativeSlots && alternativeSlots.length > 0) {
-    text += `\n\n**Shu kundagi bo'sh vaqtlar:**\n`;
+    text += `\n\n*Shu kundagi bo'sh vaqtlar:*\n`;
     for (const slot of alternativeSlots.slice(0, 5)) {
       text += `• ${slot.start} - ${slot.end}\n`;
     }
     text += `\nBoshqa vaqtga qayta so'rov yuborishingiz mumkin.`;
   } else {
-    text += `\n\nAfsuski, bu kun uchun hozircha bo'sh vaqt yo'q. Boshqa kunni tanlab ko'ring.`;
+    text += `\n\nAfsunki, bu kun uchun hozircha bo'sh vaqt yo'q. Boshqa kunni tanlab ko'ring.`;
   }
 
-  await bot.sendMessage(userId, text, { parse_mode: "Markdown" });
+  await bot.sendMessage(userId, text, {
+    parse_mode: "Markdown",
+    reply_markup: miniAppKeyboard(false),
+  });
 }
 
 export async function notifyUserExpired(
@@ -140,12 +150,15 @@ export async function notifyUserExpired(
   booking: Booking,
 ): Promise<void> {
   const text =
-    `⏰ **Muddati o'tdi**\n\n` +
+    `⏰ *Muddati o'tdi*\n\n` +
     `📅 ${booking.date}\n` +
     `⏰ ${booking.start} - ${booking.end}\n\n` +
     `Admin javob bermadi. Qayta so'rov yuborishingiz mumkin.`;
 
-  await bot.sendMessage(userId, text);
+  await bot.sendMessage(userId, text, {
+    parse_mode: "Markdown",
+    reply_markup: miniAppKeyboard(false),
+  });
 }
 
 export async function notifySlotAvailable(
@@ -155,12 +168,12 @@ export async function notifySlotAvailable(
   pendingCount: number,
 ): Promise<void> {
   const text =
-    `🔓 **Slot bo'shadi!**\n\n` +
+    `🔓 *Slot bo'shadi!*\n\n` +
     `📅 ${booking.date}\n` +
     `⏰ ${booking.start} - ${booking.end}\n\n` +
     `Navbatda ${pendingCount} ta so'rov bor.`;
 
-  await bot.sendMessage(adminChatId, text);
+  await bot.sendMessage(adminChatId, text, { parse_mode: "Markdown" });
 }
 
 export async function notifyUserCancelled(
@@ -169,7 +182,7 @@ export async function notifyUserCancelled(
   booking: Booking,
 ): Promise<void> {
   const text =
-    `⚠️ **Broningiz bekor qilindi**\n\n` +
+    `⚠️ *Broningiz bekor qilindi*\n\n` +
     `📅 ${booking.date}\n` +
     `⏰ ${booking.start} - ${booking.end}\n\n` +
     `Ushbu o'yin vaqti admin tomonidan bekor qilindi.`;

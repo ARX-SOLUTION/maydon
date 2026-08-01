@@ -197,7 +197,11 @@ export function registerDecisions(): void {
       await editDecided(ctx, booking, "❌ Rad etildi", ctx.from?.first_name);
       // #14: DM the user their request was rejected, with the day's free slots.
       const alternatives = await freeAlternatives(booking.date);
-      await notifyUserRejection(booking, "So'rov tasdiqlanmadi", alternatives);
+      await notifyUserRejection(
+        booking,
+        booking.rejectionReason || "So'rov tasdiqlanmadi",
+        alternatives,
+      );
     }
   });
 
