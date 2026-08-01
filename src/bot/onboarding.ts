@@ -140,7 +140,8 @@ export function registerOnboarding(): void {
     const user = await getUser(userId);
     if (!user) return;
 
-    user.phone = contact.phone_number;
+    const rawPhone = contact.phone_number.trim();
+    user.phone = rawPhone.startsWith("+") ? rawPhone : `+${rawPhone}`;
 
     if (!user.isActive) {
       user.onboardingStep = "name";

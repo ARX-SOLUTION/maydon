@@ -12,7 +12,7 @@ interface UserAppHeaderProps {
 }
 
 export const UserAppHeader: FC<UserAppHeaderProps> = ({ 
-  title = "BronQilish", 
+  title = "Bron qilish", 
   subtitle = "Maydon band qilish tizimi",
   userName,
   userPhoto,
