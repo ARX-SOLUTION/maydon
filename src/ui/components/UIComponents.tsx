@@ -10,10 +10,10 @@ export const AppShell: FC = ({ children }) => (
 export const PageHeader: FC<
   { title: string; subtitle?: string; rightNode?: any }
 > = ({ title, subtitle, rightNode }) => (
-  <div class="px-5 pt-6 pb-4 bg-crm-surface/95 backdrop-blur-md rounded-b-[24px] shadow-soft mb-5 sticky top-0 z-40 tma-safe-top">
+  <div class="px-5 pt-6 pb-4 glass-panel rounded-b-r-lg shadow-soft mb-5 sticky top-0 z-40 tma-safe-top border-b border-crm-borderSoft/30">
     <div class="flex justify-between items-center gap-4">
       <div class="min-w-0">
-        <h1 class="text-[22px] font-extrabold tracking-normal leading-tight">
+        <h1 class="font-display text-[22px] font-extrabold tracking-tight leading-tight">
           {title}
         </h1>
         {subtitle
@@ -32,12 +32,12 @@ export const PageHeader: FC<
 export const MetricCard: FC<
   { title: string; value: string; subtitle?: string; highlight?: boolean }
 > = ({ title, value, subtitle, highlight }) => (
-  <div class="bg-crm-surface p-4 rounded-[24px] shadow-soft flex flex-col justify-center">
-    <span class="text-[13px] font-semibold text-crm-textMuted mb-1.5 uppercase tracking-wide">
+  <div class="glass-card p-4 rounded-r-md shadow-soft flex flex-col justify-center">
+    <span class="text-[12px] font-bold text-crm-textMuted mb-1.5 uppercase tracking-wider">
       {title}
     </span>
     <span
-      class={`text-[22px] font-extrabold tabular-nums ${
+      class={`font-display text-[22px] font-extrabold tabular-nums ${
         highlight ? "text-crm-primary" : "text-crm-textMain"
       }`}
     >
@@ -61,7 +61,7 @@ export const StatusBadge: FC<{ status: string; label: string }> = (
   { status, label },
 ) => {
   let classes =
-    "px-[10px] h-[26px] inline-flex items-center rounded-full text-[12px] font-semibold whitespace-nowrap ";
+    "px-[10px] h-[26px] inline-flex items-center rounded-r-xs text-[12px] font-semibold whitespace-nowrap ";
 
   if (status === "paid" || status === "success") {
     classes += "bg-crm-successSoft text-crm-success";
@@ -80,7 +80,7 @@ export const Card: FC<PropsWithChildren<{ class?: string; id?: string }>> = (
   { children, class: className = "", id },
 ) => (
   <div
-    class={`bg-crm-surface rounded-[24px] p-4 shadow-soft flex flex-col gap-3 ${className}`}
+    class={`glass-card rounded-r-md p-4 shadow-soft flex flex-col gap-3 ${className}`}
     id={id}
   >
     {children}
@@ -91,7 +91,7 @@ export const InnerCard: FC<PropsWithChildren<{ class?: string }>> = (
   { children, class: className = "" },
 ) => (
   <div
-    class={`bg-crm-surfaceSoft rounded-[16px] p-3 flex flex-col gap-2 ${className}`}
+    class={`glass-surface rounded-r-sm p-3 flex flex-col gap-2 ${className}`}
   >
     {children}
   </div>
@@ -116,12 +116,12 @@ export const Button: FC<ButtonProps> = (
   },
 ) => {
   let base =
-    "min-h-[48px] min-w-[44px] rounded-[16px] font-bold text-[15px] tap-scale focus-ring flex items-center justify-center gap-2 px-4 disabled:opacity-45 ";
+    "min-h-[48px] min-w-[44px] rounded-r-sm font-display font-bold text-[15px] tap-scale focus-ring flex items-center justify-center gap-2 px-4 disabled:opacity-45 ";
 
   if (variant === "primary") {
     base += "bg-crm-primary text-white shadow-floating hover:brightness-110 ";
   } else if (variant === "secondary") {
-    base += "bg-crm-surfaceSoft text-crm-textMain hover:bg-gray-200 ";
+    base += "glass-surface text-crm-textMain hover:bg-crm-surfaceSoft ";
   } else if (variant === "danger") {
     base += "bg-crm-dangerSoft text-crm-danger hover:bg-red-200 ";
   }
@@ -132,3 +132,4 @@ export const Button: FC<ButtonProps> = (
     </button>
   );
 };
+

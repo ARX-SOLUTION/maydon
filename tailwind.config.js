@@ -9,7 +9,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', "system-ui", "sans-serif"],
+        display: ['"Plus Jakarta Sans"', "system-ui", "sans-serif"],
+        sans: ['"DM Sans"', "system-ui", "sans-serif"],
       },
       colors: {
         crm: {
@@ -17,6 +18,7 @@ export default {
           surface: "var(--section-bg-color)",
           surfaceSoft: "var(--secondary-bg-color)",
           primary: "var(--button-color)",
+          primarySoft: "rgba(37, 99, 235, 0.12)",
           onPrimary: "var(--button-text-color)",
           secondary: "var(--button-color)",
           success: "#34C759",
@@ -40,6 +42,11 @@ export default {
         card: "0px 2px 12px rgba(0,0,0,0.06)",
       },
       borderRadius: {
+        "r-xs": "var(--r-xs)", // 10px
+        "r-sm": "var(--r-sm)", // 14px
+        "r-md": "var(--r-md)", // 20px
+        "r-lg": "var(--r-lg)", // 28px
+        "r-xl": "var(--r-xl)", // 34px
         "4xl": "24px",
         "3xl": "20px",
         "2xl": "16px",

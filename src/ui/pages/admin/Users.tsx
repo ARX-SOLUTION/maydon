@@ -24,36 +24,35 @@ function userRow(u) {
   var isBlocked = u.isBlocked;
   var approval = u.approvalStatus || (u.isActive ? "approved" : "pending");
   var btnClass = isBlocked 
-    ? "bg-crm-primarySoft text-crm-primary" 
-    : "bg-crm-dangerSoft text-crm-danger";
+    ? "glass-surface text-crm-primary border border-crm-primary/20" 
+    : "glass-surface text-crm-danger border border-crm-danger/20";
   var btnIcon = isBlocked ? UNLOCK_SVG : LOCK_SVG;
   var btnText = isBlocked ? "Ochish" : "Bloklash";
   
-  var noShowClass = u.noShows > 0 ? "text-crm-danger" : "text-crm-textMuted";
+  var noShowClass = u.noShows > 0 ? "text-crm-danger font-extrabold" : "text-crm-textMuted font-bold";
   var approvalLabel = approval === "approved" ? "Tasdiqlangan" : approval === "rejected" ? "Rad etilgan" : "Tasdiq kutilmoqda";
   var approvalClass = approval === "approved" ? "bg-crm-successSoft text-crm-success" : approval === "rejected" ? "bg-crm-dangerSoft text-crm-danger" : "bg-crm-primarySoft text-crm-primary";
-  // NB: this whole script lives in a backtick template literal, so an inner \' would
-  // collapse to a bare ' and break the generated JS. Use \\' to emit a real \' escape.
-  var approvalActions = approval === "pending"
-    ? '<div class="flex gap-2 mt-2"><button onclick="decideUser(' + u.telegramId + ', \\'approve\\', this)" class="min-h-[40px] flex-1 rounded-[12px] bg-crm-successSoft text-crm-success font-semibold text-[12px]">Tasdiqlash</button><button onclick="decideUser(' + u.telegramId + ', \\'reject\\', this)" class="min-h-[40px] flex-1 rounded-[12px] bg-crm-dangerSoft text-crm-danger font-semibold text-[12px]">Rad etish</button></div>'
-    : (u.approvalDecidedByName ? '<div class="text-[12px] text-crm-textMuted mt-2">Admin: ' + escHtml(u.approvalDecidedByName) + '</div>' : '');
 
-  return '<div class="bg-crm-surface rounded-[24px] p-4 shadow-soft flex flex-col gap-3">'
+  var approvalActions = approval === "pending"
+    ? '<div class="flex gap-2 mt-2.5"><button onclick="decideUser(' + u.telegramId + ', \\'approve\\', this)" class="min-h-[40px] flex-1 rounded-r-xs bg-crm-successSoft text-crm-success font-display font-bold text-[12px] tap-scale">Tasdiqlash</button><button onclick="decideUser(' + u.telegramId + ', \\'reject\\', this)" class="min-h-[40px] flex-1 rounded-r-xs bg-crm-dangerSoft text-crm-danger font-display font-bold text-[12px] tap-scale">Rad etish</button></div>'
+    : (u.approvalDecidedByName ? '<div class="text-[12px] text-crm-textMuted mt-2 font-medium">Admin: ' + escHtml(u.approvalDecidedByName) + '</div>' : '');
+
+  return '<div class="glass-card rounded-r-md p-4 shadow-soft border border-crm-borderSoft/40 flex flex-col gap-3">'
     + '<div class="flex items-center justify-between gap-3">'
       + '<div class="flex items-center gap-3 min-w-0">'
-        + '<div class="w-10 h-10 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center shrink-0">' + PROFILE_SVG + '</div>'
+        + '<div class="w-10 h-10 rounded-full bg-crm-primarySoft text-crm-primary flex items-center justify-center shrink-0 shadow-soft">' + PROFILE_SVG + '</div>'
         + '<div class="min-w-0">'
-          + '<div class="text-[15px] font-bold truncate">' + escHtml(u.name || 'Nomsiz') + '</div>'
-          + '<div class="text-[13px] text-crm-textMuted truncate">' + escHtml(u.phone || 'Nomer yo\\'q') + '</div>'
+          + '<div class="font-display text-[15px] font-extrabold text-crm-textMain truncate">' + escHtml(u.name || 'Nomsiz') + '</div>'
+          + '<div class="text-[13px] font-semibold text-crm-textMuted truncate">' + escHtml(u.phone || 'Nomer yo\\'q') + '</div>'
         + '</div>'
       + '</div>'
-      + '<button onclick="toggleBlock(' + u.telegramId + ', this)" aria-label="' + btnText + '" class="min-w-[44px] min-h-[44px] rounded-[14px] ' + btnClass + ' flex items-center justify-center gap-1.5 px-3 text-[13px] font-semibold tap-scale focus-ring shrink-0 disabled:opacity-50">' + btnIcon + ' ' + btnText + '</button>'
+      + '<button onclick="toggleBlock(' + u.telegramId + ', this)" aria-label="' + btnText + '" class="min-w-[44px] min-h-[44px] rounded-r-sm ' + btnClass + ' flex items-center justify-center gap-1.5 px-3 text-[13px] font-bold tap-scale focus-ring shrink-0 disabled:opacity-50">' + btnIcon + ' ' + btnText + '</button>'
     + '</div>'
-    + '<div class="flex items-center gap-4 text-[13px] pt-3 border-t border-crm-borderSoft mt-1">'
-      + '<div>Jami: <span class="font-bold text-crm-text">' + u.totalBookings + '</span> ta</div>'
-      + '<div>No-show: <span class="font-bold ' + noShowClass + '">' + u.noShows + '</span> ta</div>'
+    + '<div class="flex items-center gap-4 text-[13px] pt-3 border-t border-crm-borderSoft/40 mt-1 font-semibold text-crm-textMuted">'
+      + '<div>Jami: <span class="font-display font-extrabold text-crm-textMain">' + u.totalBookings + '</span> ta</div>'
+      + '<div>No-show: <span class="font-display ' + noShowClass + '">' + u.noShows + '</span> ta</div>'
     + '</div>'
-    + '<div class="mt-1"><span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ' + approvalClass + '">' + approvalLabel + '</span>' + approvalActions + '</div>'
+    + '<div class="mt-1"><span class="inline-flex rounded-r-xs px-2.5 py-0.5 text-[11px] font-bold ' + approvalClass + '">' + approvalLabel + '</span>' + approvalActions + '</div>'
   + '</div>';
 }
 
@@ -88,7 +87,7 @@ function renderList() {
       : activeTab === "pending" ? "Tasdiqlash kutayotgan foydalanuvchi yo\\'q"
       : activeTab === "rejected" ? "Rad etilgan foydalanuvchi yo\\'q"
       : "Hozircha mijozlar yo\\'q";
-    list.innerHTML = '<div class="bg-crm-surface rounded-[24px] p-8 shadow-soft text-center text-crm-textMuted text-sm font-medium flex flex-col items-center"><div class="w-12 h-12 rounded-full bg-crm-surfaceSoft flex items-center justify-center text-crm-textMuted mb-3">' + PROFILE_SVG + '</div>' + msg + '</div>';
+    list.innerHTML = '<div class="glass-card rounded-r-md p-8 shadow-soft text-center text-crm-textMuted text-sm font-medium flex flex-col items-center border border-crm-borderSoft/40"><div class="w-12 h-12 rounded-full bg-crm-primarySoft flex items-center justify-center text-crm-primary mb-3">' + PROFILE_SVG + '</div><span class="font-display font-bold text-crm-textMain text-[15px]">' + msg + '</span></div>';
     return;
   }
   list.innerHTML = filtered.map(function(u) { return userRow(u); }).join("");
@@ -101,8 +100,8 @@ function setTab(tab, btn) {
     var isActive = t === btn;
     t.setAttribute('aria-selected', isActive ? 'true' : 'false');
     t.className = isActive
-      ? 'min-h-[42px] px-4 rounded-full bg-crm-primary text-white text-[13px] font-bold tap-scale focus-ring shrink-0'
-      : 'min-h-[42px] px-4 rounded-full bg-crm-surface text-crm-textMuted text-[13px] font-semibold tap-scale focus-ring shrink-0 shadow-soft';
+      ? 'min-h-[40px] px-4 rounded-r-sm bg-crm-primary text-white text-[13px] font-display font-bold tap-scale focus-ring shrink-0 shadow-floating'
+      : 'min-h-[40px] px-4 rounded-r-sm glass-surface text-crm-textMuted text-[13px] font-bold tap-scale focus-ring shrink-0 hover:text-crm-textMain';
   });
   renderList();
 }
@@ -118,15 +117,14 @@ function onUserSearch(value) {
 async function loadUsers() {
   var list = document.getElementById("usersList");
   if (!list) return;
-  list.innerHTML = '<div class="text-center text-crm-textMuted text-sm font-medium py-8">Yuklanmoqda...</div>';
+  list.innerHTML = '<div class="text-center text-crm-textMuted text-sm font-bold py-8 font-display">Yuklanmoqda...</div>';
   try {
     var res = await fetch("/api/admin/users", { headers: auth() });
     if (!res.ok) {
-      list.innerHTML = '<div class="bg-crm-surface rounded-[24px] p-8 shadow-soft text-center text-crm-textMuted text-sm font-medium">Xatolik yuz berdi.</div>';
+      list.innerHTML = '<div class="glass-card rounded-r-md p-8 shadow-soft text-center text-crm-textMuted text-sm font-medium border border-crm-borderSoft/40">Xatolik yuz berdi.</div>';
       return;
     }
     var data = await res.json();
-    // Sort logic: blocked users at bottom, then those with most no-shows
     data.sort((a, b) => {
       if (a.isBlocked !== b.isBlocked) return a.isBlocked ? 1 : -1;
       return b.noShows - a.noShows;
@@ -134,7 +132,7 @@ async function loadUsers() {
     allUsers = data;
     renderList();
   } catch(e) {
-    list.innerHTML = '<div class="text-center text-crm-danger text-sm font-medium py-8">Xatolik yuz berdi</div>';
+    list.innerHTML = '<div class="text-center text-crm-danger text-sm font-bold py-8">Xatolik yuz berdi</div>';
   }
 }
 
@@ -161,11 +159,9 @@ window.toggleBlock = async function(id, btn) {
       return;
     }
     
-    // success: toggle UI
     window.toast(data.isBlocked ? "Bloklandi" : "Blokdan chiqarildi");
-    
     var isBlocked = data.isBlocked;
-    btn.className = "min-w-[44px] min-h-[44px] rounded-[14px] flex items-center justify-center gap-1.5 px-3 text-[13px] font-semibold tap-scale focus-ring shrink-0 disabled:opacity-50 " + (isBlocked ? "bg-crm-primarySoft text-crm-primary" : "bg-crm-dangerSoft text-crm-danger");
+    btn.className = "min-w-[44px] min-h-[44px] rounded-r-sm flex items-center justify-center gap-1.5 px-3 text-[13px] font-bold tap-scale focus-ring shrink-0 disabled:opacity-50 " + (isBlocked ? "glass-surface text-crm-primary border border-crm-primary/20" : "glass-surface text-crm-danger border border-crm-danger/20");
     btn.innerHTML = (isBlocked ? UNLOCK_SVG : LOCK_SVG) + " " + (isBlocked ? "Ochish" : "Bloklash");
     btn.disabled = false;
   } catch (e) {
@@ -212,7 +208,7 @@ export const AdminUsers: FC = () => {
         subtitle="Mijozlar reytingi va bloklash"
       />
 
-      <div class="px-4 pb-[100px] mt-4 flex flex-col gap-3">
+      <div class="px-5 pb-[100px] mt-4 flex flex-col gap-3">
         <div class="relative">
           <Icon
             name="search"
@@ -224,7 +220,7 @@ export const AdminUsers: FC = () => {
             placeholder="Ism, telefon yoki username"
             aria-label="Mijozlarni qidirish"
             oninput="onUserSearch(this.value)"
-            class="w-full h-[44px] pl-10 pr-4 bg-crm-surface rounded-[14px] text-[14px] font-medium border border-crm-borderSoft placeholder:text-crm-textMuted/60 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
+            class="w-full h-[46px] pl-10 pr-4 glass-surface rounded-r-sm text-[14px] font-medium border border-crm-borderSoft/40 placeholder:text-crm-textMuted/60 focus:outline-none focus:ring-2 focus:ring-crm-primary/40"
           />
         </div>
         <div class="flex gap-2 overflow-x-auto scrollbar-hide pb-1" role="tablist" aria-label="Mijoz holati">
@@ -234,7 +230,7 @@ export const AdminUsers: FC = () => {
             role="tab"
             aria-selected="true"
             onclick="setTab('all', this)"
-            class="min-h-[42px] px-4 rounded-full bg-crm-primary text-white text-[13px] font-bold tap-scale focus-ring shrink-0"
+            class="min-h-[40px] px-4 rounded-r-sm bg-crm-primary text-white text-[13px] font-display font-bold tap-scale focus-ring shrink-0 shadow-floating"
           >
             Barchasi
           </button>
@@ -244,7 +240,7 @@ export const AdminUsers: FC = () => {
             role="tab"
             aria-selected="false"
             onclick="setTab('pending', this)"
-            class="min-h-[42px] px-4 rounded-full bg-crm-surface text-crm-textMuted text-[13px] font-semibold tap-scale focus-ring shrink-0 shadow-soft"
+            class="min-h-[40px] px-4 rounded-r-sm glass-surface text-crm-textMuted text-[13px] font-bold tap-scale focus-ring shrink-0 hover:text-crm-textMain"
           >
             Tasdiq kutmoqda
           </button>
@@ -254,7 +250,7 @@ export const AdminUsers: FC = () => {
             role="tab"
             aria-selected="false"
             onclick="setTab('approved', this)"
-            class="min-h-[42px] px-4 rounded-full bg-crm-surface text-crm-textMuted text-[13px] font-semibold tap-scale focus-ring shrink-0 shadow-soft"
+            class="min-h-[40px] px-4 rounded-r-sm glass-surface text-crm-textMuted text-[13px] font-bold tap-scale focus-ring shrink-0 hover:text-crm-textMain"
           >
             Faol
           </button>
@@ -264,7 +260,7 @@ export const AdminUsers: FC = () => {
             role="tab"
             aria-selected="false"
             onclick="setTab('rejected', this)"
-            class="min-h-[42px] px-4 rounded-full bg-crm-surface text-crm-textMuted text-[13px] font-semibold tap-scale focus-ring shrink-0 shadow-soft"
+            class="min-h-[40px] px-4 rounded-r-sm glass-surface text-crm-textMuted text-[13px] font-bold tap-scale focus-ring shrink-0 hover:text-crm-textMain"
           >
             Rad etilgan
           </button>

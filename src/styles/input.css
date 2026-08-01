@@ -15,6 +15,13 @@
     --button-text-color: #FFFFFF;
     --header-bg-color: #FFFFFF;
     --border-color: rgba(0, 0, 0, 0.1);
+
+    /* 5-tier Radius System */
+    --r-xs: 10px;
+    --r-sm: 14px;
+    --r-md: 20px;
+    --r-lg: 28px;
+    --r-xl: 34px;
   }
 
   [data-theme="dark"] {
@@ -33,15 +40,68 @@
 }
 
 @layer utilities {
+  /* High Depth Glass Panel (Header, Bottom Nav, Sheets) */
   .glass-panel {
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: saturate(1.5) blur(24px);
+    -webkit-backdrop-filter: saturate(1.5) blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  [data-theme="dark"] .glass-panel {
+    background: rgba(28, 28, 30, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
-  [data-theme="dark"] .glass-panel {
-    background: rgba(28, 28, 30, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Medium Depth Glass Card (Main Content Cards) */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.68);
+    backdrop-filter: saturate(1.2) blur(16px);
+    -webkit-backdrop-filter: saturate(1.2) blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+  [data-theme="dark"] .glass-card {
+    background: rgba(28, 28, 30, 0.68);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Low Depth Glass Surface (Inner Containers, Chips, Details) */
+  .glass-surface {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  [data-theme="dark"] .glass-surface {
+    background: rgba(44, 44, 46, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Low Performance Device Fallback */
+  .low-perf .glass-panel {
+    background: var(--section-bg-color);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .low-perf .glass-card {
+    background: var(--section-bg-color);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .low-perf .glass-surface {
+    background: var(--secondary-bg-color);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Diagonal Stripe Pattern for Limited Slots */
+  .pattern-limited {
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent,
+      transparent 6px,
+      rgba(255, 149, 0, 0.08) 6px,
+      rgba(255, 149, 0, 0.08) 12px
+    );
   }
 }
+

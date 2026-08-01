@@ -66,12 +66,12 @@ export const RoleBottomNav: FC<{ role: Role; activeId: string }> = (
   return (
     <>
     <nav
-      class="fixed bottom-0 left-0 right-0 mx-auto max-w-[480px] glass-panel pb-[max(8px,env(safe-area-inset-bottom))] z-50 rounded-t-[32px] shadow-floating"
+      class="fixed bottom-0 left-0 right-0 mx-auto max-w-[480px] glass-panel pb-[max(8px,env(safe-area-inset-bottom))] z-50 rounded-t-r-xl shadow-floating border-t border-crm-borderSoft/30"
       aria-label={role === "admin"
         ? "Admin navigatsiyasi"
         : "Foydalanuvchi navigatsiyasi"}
     >
-      <div class="flex justify-around items-center min-h-[68px] px-3 gap-2">
+      <div class="flex justify-around items-center min-h-[68px] px-3 gap-1">
         {items.map((item) => {
           const isActive = item.id === activeId;
           return (
@@ -86,23 +86,23 @@ export const RoleBottomNav: FC<{ role: Role; activeId: string }> = (
               aria-label={item.label}
               class={`${
                 item.id === "admins" ? "hidden" : "flex"
-              } flex-col items-center justify-center min-w-[56px] flex-1 min-h-[60px] rounded-2xl tap-scale focus-ring ${
+              } flex-col items-center justify-center min-w-[56px] flex-1 min-h-[60px] rounded-r-sm tap-scale focus-ring ${
                 isActive
                   ? "text-crm-primary"
                   : "text-crm-textMuted hover:text-crm-textMain hover:bg-crm-surfaceSoft/50"
               }`}
             >
-              <div class={`relative flex items-center justify-center w-10 h-8 mb-1 rounded-xl transition-colors duration-200 ${isActive ? 'bg-crm-primarySoft/40' : ''}`}>
+              <div class={`relative flex items-center justify-center w-10 h-8 mb-0.5 rounded-r-xs transition-all duration-200 ${isActive ? 'bg-crm-primarySoft/50 text-crm-primary shadow-sm scale-105' : ''}`}>
                 <div class="relative z-10">
                   <Icon
                     name={item.icon}
-                    class={`w-5 h-5 ${
-                      isActive ? "stroke-[2.5px]" : "stroke-2"
+                    class={`w-5 h-5 transition-transform ${
+                      isActive ? "stroke-[2.5px] scale-110" : "stroke-2"
                     }`}
                   />
                 </div>
               </div>
-              <span class="text-[10px] font-bold tracking-normal leading-tight">
+              <span class={`text-[10px] font-bold tracking-tight leading-tight ${isActive ? 'font-display' : ''}`}>
                 {item.label}
               </span>
             </a>
